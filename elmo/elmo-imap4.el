@@ -383,20 +383,23 @@ Returns a TAG string which is assigned to the COMMAND."
 TAG is the tag of the command"
   (with-current-buffer (process-buffer
 			(elmo-network-session-process-internal session))
-    (while (not (or (string= tag elmo-imap4-reached-tag)
-		    (elmo-imap4-response-bye-p elmo-imap4-current-response)
-		    (when (elmo-imap4-response-garbage-p
-			   elmo-imap4-current-response)
-		      (message "Garbage response: %s"
-			       (elmo-imap4-response-value
-				elmo-imap4-current-response
-				'garbage))
-		      t)))
-      (when (memq (process-status
-		   (elmo-network-session-process-internal session))
-		  '(open run))
-	(accept-process-output (elmo-network-session-process-internal session)
-			       1)))
+    (block imap-loop
+      (while (not (or (string= tag elmo-imap4-reached-tag)
+                      (elmo-imap4-response-bye-p elmo-imap4-current-response)
+                      (when (elmo-imap4-response-garbage-p
+                             elmo-imap4-current-response)
+                        (message "Garbage response: %s"
+                                 (elmo-imap4-response-value
+                                  elmo-imap4-current-response
+                                  'garbage))
+                        t)))
+        (if (memq (process-status
+                     (elmo-network-session-process-internal session))
+                    '(open run))
+            (accept-process-output (elmo-network-session-process-internal session)
+                                   1)
+          (message "IMAP process died")
+          (return-from imap-loop))))
     (elmo-imap4-debug "[%s] => %s" (format-time-string "%T") (prin1-to-string elmo-imap4-current-response))
     (setq elmo-imap4-parsing nil)
     elmo-imap4-current-response))
