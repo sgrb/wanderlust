@@ -741,6 +741,17 @@ Returns response value if selecting folder succeed. "
 			 (format "Select %s failed" mailbox)))))))
       (and result response))))
 
+(defun elmo-imap4-session-unselect-mailbox (session mailbox)
+  "Unselect MAILBOX in SESSION.
+Deselecting will exit selected state without causing silent
+EXPUNGE for deleted messages."
+  (if (elmo-imap4-session-capable-p session 'unselect)
+      (elmo-imap4-send-command-wait session "unselect")
+    (elmo-imap4-send-command-wait
+     session
+     (list "examine " (elmo-imap4-mailbox mailbox)))
+    (elmo-imap4-send-command-wait session "close")))
+
 (defun elmo-imap4-check-validity (spec validity-file)
 ;;; Not used.
 ;;;(elmo-imap4-send-command-wait
@@ -1151,15 +1162,15 @@ If CHOP-LENGTH is not specified, message set is not chopped."
 		       (if (sasl-step-data step)
 			   (elmo-base64-encode-string (sasl-step-data step)
 						      'no-line-break)
-			 "")))))))
+			 ""))))))))
 ;; Some servers return reduced capabilities when client asks for them
 ;; before login. It might be a good idea to ask them again, otherwise
 ;; we can miss some useful feature.
-	 (elmo-imap4-session-set-capability-internal
-	  session
-	  (elmo-imap4-response-value
-	   (elmo-imap4-send-command-wait session "capability")
-	   'capability)))))))
+	(elmo-imap4-session-set-capability-internal
+	 session
+	 (elmo-imap4-response-value
+	  (elmo-imap4-send-command-wait session "capability")
+	  'capability))))))
 
 (luna-define-method elmo-network-setup-session ((session
 						 elmo-imap4-session))
@@ -1452,7 +1463,7 @@ Return nil if no complete line has arrived."
 				      ")"))))
 	   (ESEARCH     (list
 			 'esearch
-			 (cddr (split-string (buffer-substring (point) (point-max)) " " "\,"))))
+			 (cddr (split-string (buffer-substring (point) (point-max)) " "))))
 	   (STATUS     (elmo-imap4-parse-status))
 	   ;; Added
 	   (NAMESPACE  (elmo-imap4-parse-namespace))
@@ -2175,6 +2186,9 @@ Return nil if no complete line has arrived."
     (elmo-imap4-session-select-mailbox session
 				       (elmo-imap4-folder-mailbox-internal
 					folder))
+    (elmo-imap4-session-unselect-mailbox session
+					 (elmo-imap4-folder-mailbox-internal
+					  folder))
     (elmo-imap4-send-command-wait session "close")
     (elmo-imap4-send-command-wait
      session
