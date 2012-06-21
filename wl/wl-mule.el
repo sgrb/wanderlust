@@ -101,20 +101,20 @@ Special commands:
   string)
 
 (defun wl-message-define-keymap ()
-  (let ((keymap (make-sparse-keymap)))
-    (define-key keymap "D" 'wl-message-delete-current-part)
-    (define-key keymap "l" 'wl-message-toggle-disp-summary)
-    (define-key keymap "\C-c:d" 'wl-message-decrypt-pgp-nonmime)
-    (define-key keymap "\C-c:v" 'wl-message-verify-pgp-nonmime)
-    (define-key keymap "w" 'wl-draft)
-    (define-key keymap [mouse-4] 'wl-message-wheel-down)
-    (define-key keymap [mouse-5] 'wl-message-wheel-up)
-    (define-key keymap [S-mouse-4] 'wl-message-wheel-down)
-    (define-key keymap [S-mouse-5] 'wl-message-wheel-up)
-    (set-keymap-parent wl-message-button-map keymap)
+  (let ((map (make-sparse-keymap)))
+    (define-key map "D" 'wl-message-delete-current-part)
+    (define-key map "l" 'wl-message-toggle-disp-summary)
+    (define-key map "\C-c:d" 'wl-message-decrypt-pgp-nonmime)
+    (define-key map "\C-c:v" 'wl-message-verify-pgp-nonmime)
+    (define-key map "w" 'wl-draft)
+    (define-key map [mouse-4] 'wl-message-wheel-down)
+    (define-key map [mouse-5] 'wl-message-wheel-up)
+    (define-key map [S-mouse-4] 'wl-message-wheel-down)
+    (define-key map [S-mouse-5] 'wl-message-wheel-up)
+    (set-keymap-parent wl-message-button-map map)
     (define-key wl-message-button-map [mouse-2]
       'wl-message-button-dispatcher)
-    keymap))
+    map))
 
 (defun wl-message-wheel-up (event)
   (interactive "e")
@@ -171,30 +171,30 @@ Special commands:
   (define-key wl-draft-mode-map "\M-n" 'wl-draft-next-history-element))
 
 (defun wl-draft-overload-menubar ()
-  (let ((keymap (current-local-map)))
-    (define-key keymap [menu-bar mail send]
+  (let ((map (current-local-map)))
+    (define-key map [menu-bar mail send]
       '("Send Message" . wl-draft-send-and-exit))
-    (define-key keymap [menu-bar mail send-stay]
+    (define-key map [menu-bar mail send-stay]
       '("Send, Keep Editing" . wl-draft-send))
-    (define-key-after (lookup-key keymap [menu-bar mail])
+    (define-key-after (lookup-key map [menu-bar mail])
       [mail-sep-send] '("--")
       'send-stay)
-    (define-key keymap [menu-bar mail cancel]
+    (define-key map [menu-bar mail cancel]
       '("Kill Current Draft" . wl-draft-kill))
-    (define-key-after (lookup-key keymap [menu-bar mail])
+    (define-key-after (lookup-key map [menu-bar mail])
       [save] '("Save Draft and Exit" . wl-draft-save-and-exit)
       'cancel)
-    (define-key-after (lookup-key keymap [menu-bar mail])
+    (define-key-after (lookup-key map [menu-bar mail])
       [mail-sep-exit] '("--")
       'save)
-    (define-key-after (lookup-key keymap [menu-bar mail])
+    (define-key-after (lookup-key map [menu-bar mail])
       [preview] '("Preview Message" . wl-draft-preview-message)
       'mail-sep-exit)
-    (define-key keymap [menu-bar mail yank]
+    (define-key map [menu-bar mail yank]
       '("Cite Message" . wl-draft-yank-original))
-    (define-key keymap [menu-bar mail signature]
+    (define-key map [menu-bar mail signature]
       '("Insert Signature" . insert-signature))
-    (define-key keymap [menu-bar headers fcc]
+    (define-key map [menu-bar headers fcc]
       '("Fcc" . wl-draft-fcc))))
 
 (defun wl-draft-overload-functions ()

@@ -405,10 +405,10 @@
 	  wl-unplugged-glyph (wl-xmas-make-icon-glyph
 			      wl-plug-state-indicator-off wl-unplugged-icon))
     (let ((extent (make-extent nil nil)))
-      (let ((keymap (make-sparse-keymap)))
-	(define-key keymap 'button2
+      (let ((map (make-sparse-keymap)))
+	(define-key map 'button2
 	  (make-modeline-command-wrapper 'wl-toggle-plugged))
-	(set-extent-keymap extent keymap)
+	(set-extent-keymap extent map)
 	(set-extent-property extent 'help-echo
 			     "button2 toggles plugged status"))
       (setq wl-modeline-plug-state-on (cons extent wl-plugged-glyph)
@@ -423,10 +423,10 @@
 				wl-biff-state-indicator-off
 				wl-biff-nomail-icon))
     (let ((extent (make-extent nil nil)))
-      (let ((keymap (make-sparse-keymap)))
-	(define-key keymap 'button2
+      (let ((map (make-sparse-keymap)))
+	(define-key map 'button2
 	  (make-modeline-command-wrapper 'wl-biff-check-folders))
-	(set-extent-keymap extent keymap)
+	(set-extent-keymap extent map)
 	(set-extent-property extent 'help-echo "button2 checks new mails"))
       (setq wl-modeline-biff-state-on (cons extent wl-biff-mail-glyph)
 	    wl-modeline-biff-state-off (cons extent wl-biff-nomail-glyph)))))
@@ -455,20 +455,20 @@
 (defalias 'wl-setup-message 'wl-xmas-setup-message-toolbar)
 
 (defun wl-message-define-keymap ()
-  (let ((keymap (make-sparse-keymap)))
-    (define-key keymap "D" 'wl-message-delete-current-part)
-    (define-key keymap "l" 'wl-message-toggle-disp-summary)
-    (define-key keymap "\C-c:d" 'wl-message-decrypt-pgp-nonmime)
-    (define-key keymap "\C-c:v" 'wl-message-verify-pgp-nonmime)
-    (define-key keymap "w" 'wl-draft)
-    (define-key keymap 'button4 'wl-message-wheel-down)
-    (define-key keymap 'button5 'wl-message-wheel-up)
-    (define-key keymap [(shift button4)] 'wl-message-wheel-down)
-    (define-key keymap [(shift button5)] 'wl-message-wheel-up)
-    (set-keymap-parent wl-message-button-map keymap)
+  (let ((map (make-sparse-keymap)))
+    (define-key map "D" 'wl-message-delete-current-part)
+    (define-key map "l" 'wl-message-toggle-disp-summary)
+    (define-key map "\C-c:d" 'wl-message-decrypt-pgp-nonmime)
+    (define-key map "\C-c:v" 'wl-message-verify-pgp-nonmime)
+    (define-key map "w" 'wl-draft)
+    (define-key map 'button4 'wl-message-wheel-down)
+    (define-key map 'button5 'wl-message-wheel-up)
+    (define-key map [(shift button4)] 'wl-message-wheel-down)
+    (define-key map [(shift button5)] 'wl-message-wheel-up)
+    (set-keymap-parent wl-message-button-map map)
     (define-key wl-message-button-map 'button2
       'wl-message-button-dispatcher)
-    keymap))
+    map))
 
 (defun wl-message-wheel-up (event)
   (interactive "e")
