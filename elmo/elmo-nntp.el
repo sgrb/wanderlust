@@ -94,9 +94,8 @@ Debug information is inserted in the buffer \"*NNTP DEBUG*\"")
 (luna-define-method elmo-folder-initialize ((folder elmo-nntp-folder) name)
   (let ((elmo-network-stream-type-alist
 	 (if elmo-nntp-stream-type-alist
-	     (setq elmo-network-stream-type-alist
-		   (append elmo-nntp-stream-type-alist
-			   elmo-network-stream-type-alist))
+	     (append elmo-nntp-stream-type-alist
+		     elmo-network-stream-type-alist)
 	   elmo-network-stream-type-alist))
 	tokens)
     (setq tokens (car (elmo-parse-separated-tokens
@@ -632,10 +631,10 @@ Don't cache if nil.")
 	       (string-match
 		"211 \\([0-9]+\\) \\([0-9]+\\) \\([0-9]+\\) [^.].+$"
 		response)
-	       (> (string-to-number (elmo-match-string 1 response)) 0))
+	       (> (string-to-number (match-string 1 response)) 0))
 	  (setq numbers (elmo-nntp-make-msglist
-			 (elmo-match-string 2 response)
-			 (elmo-match-string 3 response)))))
+			 (match-string 2 response)
+			 (match-string 3 response)))))
       numbers)))
 
 (luna-define-method elmo-folder-status ((folder elmo-nntp-folder))
@@ -679,10 +678,8 @@ Don't cache if nil.")
 		    "211 \\([0-9]+\\) \\([0-9]+\\) \\([0-9]+\\) [^.].+$"
 		    response))
 	      (progn
-		(setq end-num (string-to-number
-			       (elmo-match-string 3 response)))
-		(setq e-num (string-to-number
-			     (elmo-match-string 1 response)))
+		(setq end-num (string-to-number (match-string 3 response)))
+		(setq e-num (string-to-number (match-string 1 response)))
 		(when (and killed-list
 			   (elmo-number-set-member end-num killed-list))
 		  ;; Max is killed.
@@ -984,16 +981,26 @@ Don't cache if nil.")
       (goto-char (point-min))
       (if (search-forward mail-header-separator nil t)
 	  (delete-region (match-beginning 0)(match-end 0)))
-      (setq has-message-id (std11-field-body "message-id"))
+      (setq has-message-id (let ((elmo-prefer-std11-parser t)) 
+			     (elmo-get-message-id-from-buffer 'none)))
       (elmo-nntp-send-command session "post")
       (if (string-match "^340" (setq response
 				     (elmo-nntp-read-raw-response session)))
 	  (if (string-match "recommended ID \\(<[^@]+@[^>]+>\\)" response)
 	      (unless has-message-id
+		;; We should remove invalid Message-ID header.
+		(save-restriction
+		  (save-match-data
+		    (std11-narrow-to-header)
+		    (goto-char (point-min))
+		    (let ((case-fold-search t))
+		      (if (re-search-forward "^message-id:[ \t]*" nil t)
+			  (delete-region
+			   (match-beginning 0)
+			   (min (point-max) (1+ (std11-field-end))))))))
 		(goto-char (point-min))
 		(insert (concat "Message-ID: "
-				(elmo-match-string 1 response)
-				"\n"))))
+				(match-string 1 response) "\n"))))
 	(error "POST failed"))
       (run-hooks 'elmo-nntp-post-pre-hook)
       (elmo-nntp-send-buffer session content-buf)
@@ -1026,7 +1033,7 @@ Don't cache if nil.")
 	(setq bol (point))
 	(end-of-line)
 	(setq line (buffer-substring bol (point)))
-	(unless (eq (forward-line 1) 0) (setq data-continue nil))
+	(unless (zerop (forward-line 1)) (setq data-continue nil))
 	(elmo-nntp-send-data-line session line)))))
 
 (luna-define-method elmo-folder-delete-messages ((folder elmo-nntp-folder)
@@ -1160,7 +1167,7 @@ Returns a list of cons cells like (NUMBER . VALUE)"
 
 (defun elmo-nntp-use-server-search-p (condition)
   (if (vectorp condition)
-      (not (string= "body" (elmo-filter-key condition)))
+      (not (member (elmo-filter-key condition) '("raw-body" "body")))
     (and (elmo-nntp-use-server-search-p (nth 1 condition))
 	 (elmo-nntp-use-server-search-p (nth 2 condition)))))
 
@@ -1361,7 +1368,7 @@ Returns a list of cons cells like (NUMBER . VALUE)"
 	      (save-restriction
 		(narrow-to-region beg (point))
 		(setq entity
-		      (elmo-msgdb-create-message-entity-from-buffer
+		      (elmo-msgdb-create-message-entity-from-header
 		       (elmo-msgdb-message-entity-handler new-msgdb) num))
 		(when entity
 		  (setq message-id
@@ -1413,13 +1420,12 @@ Returns a list of cons cells like (NUMBER . VALUE)"
 ;;         it is remembered in `temp-crosses' slot.
 ;;         temp-crosses slot is a list of cons cell:
 ;;         (NUMBER . (MESSAGE-ID (LIST-OF-NEWSGROUPS) 'ng))
-  (let (newsgroups crosspost-newsgroups message-id)
+  (let ((elmo-prefer-std11-parser t)
+	newsgroups crosspost-newsgroups message-id)
     (save-restriction
       (std11-narrow-to-header)
       (setq newsgroups (std11-fetch-field "newsgroups")
-	    message-id (std11-msg-id-string
-			(car (std11-parse-msg-id-string
-			      (std11-fetch-field "message-id"))))))
+	    message-id (elmo-get-message-id-from-header 'none)))
     (when newsgroups
       (when (setq crosspost-newsgroups
 		  (delete

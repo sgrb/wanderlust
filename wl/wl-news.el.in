@@ -1,4 +1,4 @@
-;;; wl-news.el --- Create notification from NEWS(.ja) for Wanderlust.
+;;; wl-news.el --- Create notification from NEWS(.ja) for Wanderlust. -*-coding: iso-2022-jp-unix;-*-
 
 ;; Copyright (C) 2002 Yoichi NAKAYAMA <yoichi@eken.phys.nagoya-u.ac.jp>
 ;; Copyright (C) 2002 Kenichi OKADA <okada@opaopa.org>
@@ -142,7 +142,7 @@
       (set-buffer
        (setq send-buffer (wl-draft-create-buffer)))
       (wl-draft-create-contents
-       (list (cons 'From "WL Release 'Bot <wl@lists.airs.net>")
+       (list (cons 'From "WL Release 'Bot <wl@ml.gentei.org>")
 	     (cons 'To (wl-draft-eword-encode-address-list wl-from))
 	     (cons 'Subject "Wanderlust NEWS")
 	     (cons 'Date (wl-make-date-string))

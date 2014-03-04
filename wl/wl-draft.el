@@ -31,6 +31,7 @@
 ;;; Code:
 ;;
 (require 'elmo)
+(require 'elmo-net)
 (require 'sendmail)
 (require 'wl-template)
 (require 'emu)
@@ -54,8 +55,6 @@
 
 (eval-and-compile
   (autoload 'wl-addrmgr "wl-addrmgr"))
-
-(autoload 'open-ssl-stream "ssl")
 
 (defvar wl-draft-buffer-message-number nil)
 (defvar wl-draft-field-completion-list nil)
@@ -145,7 +144,9 @@ e.g.
 	  (smtp-use-starttls (eq wl-smtp-connection-type 'starttls))
 	  (smtp-open-connection-function
 	   (if (eq wl-smtp-connection-type 'ssl)
-	       #'open-ssl-stream
+	       (let ((stream-type (elmo-get-network-stream-type 'ssl)))
+		 (require (elmo-network-stream-type-feature stream-type))
+		 (elmo-network-stream-type-function stream-type))
 	     smtp-open-connection-function))
 	  smtp-sasl-user-name smtp-sasl-properties sasl-read-passphrase)
      (setq smtp-sasl-user-name wl-smtp-posting-user
@@ -161,6 +162,8 @@ e.g.
 		(car smtp-sasl-mechanisms)
 		smtp-server)))))
      ,@body))
+
+(def-edebug-spec wl-smtp-extension-bind (body))
 
 (defun wl-draft-insert-date-field ()
   "Insert Date field."
@@ -276,7 +279,7 @@ e.g.
       (setq subject (wl-draft-forward-make-subject subject))
       (setq references (nconc
 			(std11-field-bodies '("References" "In-Reply-To"))
-			(list (std11-field-body "Message-Id"))))
+			(list (elmo-get-message-id-from-buffer))))
       (setq references (delq nil references)
 	    references (mapconcat 'identity references " ")
 	    references (wl-draft-parse-msg-id-list-string references)
@@ -301,7 +304,7 @@ e.g.
 
 (defun wl-draft-self-reply-p ()
   "Return t when From address in the current message is user's self one or not."
-  (wl-address-user-mail-address-p (or (elmo-field-body "From") "")))
+  (wl-address-user-mail-address-p (or (std11-field-body "From") "")))
 
 (defun wl-draft-find-reply-headers (rule-symbol)
   (let ((rule-list (symbol-value rule-symbol))
@@ -391,7 +394,7 @@ or `wl-draft-reply-with-argument-list' if WITH-ARG argument is non-nil."
 		     (if decoder (funcall decoder addr) addr)))
 	     cc)))
     (setq subject (wl-draft-reply-make-subject subject))
-    (setq in-reply-to (std11-field-body "Message-Id"))
+    (setq in-reply-to (elmo-get-message-id-from-buffer))
     (setq references (nconc
 		      (std11-field-bodies '("References" "In-Reply-To"))
 		      (list in-reply-to)))
@@ -488,7 +491,7 @@ or `wl-draft-reply-with-argument-list' if WITH-ARG argument is non-nil."
 
 (defun wl-draft-add-in-reply-to (&optional alt-field)
   (let* ((mes-id (with-current-buffer mail-reply-buffer
-		   (std11-field-body "message-id")))
+		   (elmo-get-message-id-from-buffer)))
 	 (field (or alt-field "In-Reply-To"))
 	 (ref (std11-field-body field))
 	 (ref-list nil) (st nil))
@@ -901,7 +904,7 @@ to find out how to use this."
       (wl-draft-set-sent-message 'mail 'unplugged)
     ;; send the message
     (run-hooks 'wl-mail-send-pre-hook) ;; X-PGP-Sig, Cancel-Lock
-    (let ((id (std11-field-body "Message-ID"))
+    (let ((id (elmo-get-message-id-from-buffer))
 	  (to (std11-field-body "To")))
       (case
 	  (as-binary-process
@@ -1050,7 +1053,7 @@ non-nil."
 	  (or wl-smtp-posting-server smtp-server "localhost"))
 	 (smtp-service (or wl-smtp-posting-port smtp-service))
 	 (smtp-local-domain (or smtp-local-domain wl-local-domain))
-	 (id (std11-field-body "message-id"))
+	 (id (elmo-get-message-id-from-buffer))
 	 recipients)
     (if (not (elmo-plugged-p smtp-server smtp-service))
 	(wl-draft-set-sent-message 'mail 'unplugged
@@ -1130,7 +1133,7 @@ non-nil."
   "Send the prepared message buffer with `sendmail-send-it'.
 The function `sendmail-send-it' uses the external program
 `sendmail-program'."
-  (let ((id (std11-field-body "message-id"))
+  (let ((id (elmo-get-message-id-from-buffer))
 	(to (std11-field-body "to")))
     (run-hooks 'wl-mail-send-pre-hook)
     (require 'sendmail)
@@ -1357,7 +1360,7 @@ If KILL-WHEN-DONE is non-nil, current draft buffer is killed"
 	    ;; might changed by Fcc.
 	    ;; It causes a huge loss in the IMAP folder.
 	    (when (and parent-flag parent-number
-		       (not (eq (length parent-folder) 0)))
+		       (not (zerop (length parent-folder))))
 	      (condition-case nil
 		  (wl-folder-set-persistent-mark
 		   parent-folder parent-number parent-flag)
@@ -1426,13 +1429,8 @@ If KILL-WHEN-DONE is non-nil, current draft buffer is killed"
       (progn
 	(message "Saving...")
 	(let ((msg (buffer-substring-no-properties (point-min) (point-max)))
+	      (current-number wl-draft-buffer-message-number)
 	      next-number)
-	  (when wl-draft-buffer-message-number
-	    (elmo-folder-delete-messages (wl-draft-get-folder)
-					 (list wl-draft-buffer-message-number))
-	    (wl-draft-config-info-operation wl-draft-buffer-message-number
-					    'delete))
-	  (elmo-folder-check (wl-draft-get-folder))
 	  ;; If no header separator, insert it.
 	  (with-temp-buffer
 	    (insert msg)
@@ -1454,6 +1452,11 @@ If KILL-WHEN-DONE is non-nil, current draft buffer is killed"
 			(symbol-value 'mime-header-encode-method-alist)))))
 	      (mime-edit-translate-buffer))
 	    (wl-draft-get-header-delimiter t)
+	    (when current-number
+	      (elmo-folder-delete-messages (wl-draft-get-folder)
+					   (list current-number))
+	      (wl-draft-config-info-operation current-number 'delete))
+	    (elmo-folder-check (wl-draft-get-folder))
 	    (setq next-number
 		  (elmo-folder-next-message-number (wl-draft-get-folder)))
 	    (elmo-folder-append-buffer (wl-draft-get-folder)))
@@ -2157,6 +2160,7 @@ Automatically applied in draft sending time."
 	(reply-buf (or reply-buf (and (buffer-live-p wl-draft-reply-buffer)
 				      wl-draft-reply-buffer)))
 	(local-variables wl-draft-config-variables)
+	wl-draft-idle-highlight
 	key clist found)
     (when (and (or (interactive-p)
 		   wl-draft-config-exec-flag)
@@ -2418,15 +2422,19 @@ Automatically applied in draft sending time."
 	  (switch-to-buffer buf)
 	(wl-draft-reedit msg)))))
 
-(defun wl-draft-highlight-and-recenter (&optional n)
-  (interactive "P")
+(defun wl-draft-highlight ()
   (when wl-highlight-body-too
-    (let ((modified (buffer-modified-p)))
+    (let ((modified (buffer-modified-p))
+	  wl-draft-idle-highlight)
       (unwind-protect
 	  (progn
 	    (put-text-property (point-min) (point-max) 'face nil)
 	    (wl-highlight-message (point-min) (point-max) t))
-	(set-buffer-modified-p modified))))
+	(set-buffer-modified-p modified)))))
+
+(defun wl-draft-highlight-and-recenter (&optional n)
+  (interactive "P")
+  (wl-draft-highlight)
   (static-when (featurep 'xemacs)
     ;; Cope with one of many XEmacs bugs that `recenter' takes
     ;; a long time if there are a lot of invisible text lines.
@@ -2638,6 +2646,56 @@ been implemented yet.  Partial support for SWITCH-FUNCTION now supported."
 	 (new-name (wl-draft-config-info-filename new-number msgdb-dir)))
     (when (file-exists-p old-name)
       (rename-file old-name new-name 'ok-if-already-exists))))
+
+;; Real-time draft highlighting
+(defcustom wl-draft-idle-highlight t
+  "When non-nil, enable real-time highlighting."
+  :type 'boolean
+  :group 'wl-draft)
+
+(defcustom wl-draft-idle-highlight-idle-time 0.5
+  "Do real-time highlighting after indicated idle time (second)."
+  :type 'number
+  :group 'wl-draft)
+
+(defcustom wl-draft-idle-highlight-function 'wl-draft-default-idle-highlight
+  "A function for real-time highlighting."
+  :type 'function
+  :group 'wl-draft)
+
+(defvar wl-draft-idle-highlight-timer nil)
+
+(defun wl-draft-idle-highlight (&optional state)
+  "Toggle real-time highlighting.
+If STATE is positive, enable real-time highlighting, and disable it otherwise.  When called non-interactively, enable it if STATE is omitted or nil, and toggle it if STATE is `toggle'."
+  (interactive (if current-prefix-arg "P" '(toggle)))
+  (setq wl-draft-idle-highlight
+	(if (eq state 'toggle)
+	    (null wl-draft-idle-highlight)
+	  (> (prefix-numeric-value state) 0)))
+  (when (interactive-p)
+    (message "Real-time highlighting is %sabled"
+	     (if wl-draft-idle-highlight "en" "dis")))
+  wl-draft-idle-highlight)
+
+(defun wl-draft-default-idle-highlight ()
+  (save-match-data (wl-draft-highlight)))
+
+(defun wl-draft-idle-highlight-timer (buffer)
+  (when (and wl-draft-idle-highlight
+	     (buffer-live-p buffer))
+    (with-current-buffer buffer
+      (funcall wl-draft-idle-highlight-function))))
+
+(defun wl-draft-idle-highlight-set-timer (beg end len)
+  (when wl-draft-idle-highlight
+    (require 'timer)
+    (when (timerp wl-draft-idle-highlight-timer)
+      (cancel-timer wl-draft-idle-highlight-timer))
+    (setq wl-draft-idle-highlight-timer
+	  (run-with-idle-timer
+	   wl-draft-idle-highlight-idle-time nil
+	   'wl-draft-idle-highlight-timer (current-buffer)))))
 
 (require 'product)
 (product-provide (provide 'wl-draft) (require 'wl-version))

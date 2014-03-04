@@ -45,10 +45,10 @@
   (when (string-match "\\([^/]*\\)/?\\(.*\\)$" name)
     (elmo-cache-folder-set-dir-name-internal
      folder
-     (elmo-match-string 2 name))
+     (match-string 2 name))
     (elmo-cache-folder-set-directory-internal
      folder
-     (expand-file-name (elmo-match-string 2 name)
+     (expand-file-name (match-string 2 name)
 		       elmo-cache-directory))
     folder))
 
@@ -111,7 +111,7 @@
 					       &optional flags number)
   ;; dir-name is changed according to msgid.
   (unless (elmo-cache-folder-dir-name-internal folder)
-    (let ((msgid (std11-field-body "message-id"))
+    (let ((msgid (elmo-msgdb-get-message-id-from-buffer))
 	  file dir)
       (when msgid
 	(setq file (elmo-file-cache-get-path msgid))

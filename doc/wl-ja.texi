@@ -5109,7 +5109,7 @@ Wanderlust $B$N%*%U%i%$%s%b!<%I(B/$B%*%s%i%$%s%b!<%I$r%H%0%k$7$^$9!#(B
 @lisp
 @group
 (setq wl-subscribed-mailing-list
-      '("wl@@lists.airs.net"
+      '("wl@@ml.gentei.org"
         "apel-ja@@m17n.org"
         "emacs-mime-ja@@m17n.org"))
 @end group
@@ -5137,10 +5137,10 @@ Wanderlust $B$N%*%U%i%$%s%b!<%I(B/$B%*%s%i%$%s%b!<%I$r%H%0%k$7$^$9!#(B
 $B=i4|@_Dj$O(B @code{t}$B!#(B
 Non-nil $B$J$i!"Aw?.;~$K(B @samp{Message-ID:} $B%U%#!<%k%I$r<+F0E*$KA^F~$7$^$9!#(B
 
-@item wl-message-id-use-wl-from
-@vindex wl-message-id-use-wl-from
-$B=i4|@_Dj$O(B @code{nil}$B!#(BNon-nil $B$J$i!"(B@samp{Message-ID:} $B$N%I%a%$%s%Q!<%H$K(B 
-@code{wl-from} $B$rMxMQ$7$^$9!#(B
+@item wl-message-id-use-message-from
+@vindex wl-message-id-use-message-from
+$B=i4|@_Dj$O(B @code{t}$B!#(BNon-nil $B$J$i!"(B@samp{Message-ID:} $B$N%I%a%$%s%Q!<%H$K(B 
+@samp{From:} $B%U%#!<%k%I!"$b$7$/$O(B @code{wl-from} $B$NCM$rMxMQ$7$^$9!#(B
 
 @item wl-local-domain
 @vindex wl-local-domain
@@ -5166,8 +5166,8 @@ Non-nil $B$J$i!"Aw?.;~$K(B @samp{Message-ID:} $B%U%#!<%k%I$r<+F0E*$KA^F~$7$^$
 
 @item wl-unique-id-suffix
 @vindex wl-unique-id-suffix
-$B=i4|@_Dj$O(B @samp{.wl}$B!#(BMessage-ID $B$r@8@.$9$k:]$K(B @samp{@@} $B$ND>A0$K8=$l$k(B
-$BJ8;zNs$r;XDj$7$^$9!#(B
+$B=i4|@_Dj$O(B @samp{.wl}$B!#(BMessage-ID $B$r@8@.$9$k:]$K(B @samp{@@} $B$^$?$O(B 
+@samp{%} $B$ND>A0$K8=$l$kJ8;zNs$r;XDj$7$^$9!#(B
 
 @item wl-draft-config-alist
 @vindex wl-draft-config-alist
@@ -8939,19 +8939,19 @@ Wanderlust $B$K4X$9$k5DO@$O0J2<$N%a!<%j%s%0%j%9%H$G9T$o$l$^$9!#(B
 $B:G?7%P!<%8%g%s$N%"%J%&%s%9$b$3$A$i$KN.$l$^$9!#(B
 
 @display
-Wanderlust Mailing List @t{<wl@@lists.airs.net>}
+Wanderlust Mailing List @t{<wl@@ml.gentei.org>}
 @end display
 
 $B$3$3$G$O<g$KF|K\8l$G$N5DO@$,9T$o$l$F$$$^$9!#$^$?!"1Q8l@lMQ$N%j%9%H$H$7$F(B
 
 @display
-Wanderlust List in English @t{<wl-en@@lists.airs.net>}
+Wanderlust List in English @t{<wl-en@@ml.gentei.org>}
 @end display
 
 $B$b$"$j$^$9(B($B$3$A$i$KEj9F$5$l$?%a%C%;!<%8$OA0<T$K$bG[Aw$5$l$^$9(B)$B!#(B
 
-$B$3$l$i$N%a!<%j%s%0%j%9%H$N%,%$%I$rF@$k$K$O!"(B@t{wl-ctl@@lists.airs.net} $B08(B
-($B1Q8l$NJ}$O(B @t{wl-en-ctl@@lists.airs.net} $B08(B) $B$G!"K\J8$K(B
+$B$3$l$i$N%a!<%j%s%0%j%9%H$N%,%$%I$rF@$k$K$O!"(B@t{wl-ctl@@ml.gentei.org} $B08(B
+($B1Q8l$NJ}$O(B @t{wl-en-ctl@@ml.gentei.org} $B08(B) $B$G!"K\J8$K(B
 
 @example
 # guide
@@ -8975,17 +8975,17 @@ Wanderlust List in English @t{<wl-en@@lists.airs.net>}
 $B%a!<%j%s%0%j%9%H$KEj9F$5$l$?%a%C%;!<%8$O!"%&%'%V$d(B NetNews $B$G$bFI$`$3$H(B
 $B$,$G$-$^$9!#(B
 
-@t{<wl@@lists.airs.net>} $B$KEj9F$5$l$?%a%C%;!<%8(B
+@t{<wl@@ml.gentei.org>} $B$KEj9F$5$l$?%a%C%;!<%8(B
 
 @example
-@uref{http://lists.airs.net/wl/archive/}
+@uref{http://dir.gmane.org/gmane.mail.wanderlust.general.japanese}
 @uref{news://gmane.mail.wanderlust.general.japanese@@news.gmane.org}
 @end example
 
-@t{<wl-en@@lists.airs.net>} $B$KEj9F$5$l$?%a%C%;!<%8(B
+@t{<wl-en@@ml.gentei.org>} $B$KEj9F$5$l$?%a%C%;!<%8(B
 
 @example
-@uref{http://lists.airs.net/wl-en/archive/}
+@uref{http://dir.gmane.org/gmane.mail.wanderlust.general}
 @uref{news://gmane.mail.wanderlust.general@@news.gmane.org}
 @end example
 

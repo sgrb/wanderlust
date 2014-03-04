@@ -946,6 +946,8 @@ Entering Folder mode calls the value of `wl-summary-mode-hook'."
   (buffer-disable-undo (current-buffer))
   (setq selective-display t
 	selective-display-ellipses nil)
+  (when (boundp 'bidi-paragraph-direction)
+    (set 'bidi-paragraph-direction 'left-to-right))
   (wl-mode-line-buffer-identification '(wl-summary-buffer-mode-line))
   (easy-menu-add wl-summary-mode-menu)
   (setq wl-summary-buffer-window-scroll-functions
@@ -1442,7 +1444,7 @@ This function is defined by `wl-summary-define-sort-command'." sort-by)
 	 (cons (nth 1 components)
 	       (and (car components)
 		    (eword-decode-string
-		     (decode-mime-charset-string
+		     (elmo-mime-charset-decode-string
 		      (car components)
 		      mime-charset)))))
        candidates))))
@@ -2048,8 +2050,8 @@ This function is defined for `window-scroll-functions'"
 		    (elmo-database-close))
 		(run-hooks 'wl-summary-sync-updated-hook)
 		(setq mes
-		      (if (and (eq (length delete-list) 0)
-			       (eq num 0))
+		      (if (and (zerop (length delete-list))
+			       (zerop num))
 			  (format
 			   "No updates for \"%s\"" (elmo-folder-name-internal
 						    folder))
@@ -2635,8 +2637,8 @@ If ARG, without confirm."
   (string= (funcall wl-summary-subject-filter-function subject1)
 	   (funcall wl-summary-subject-filter-function subject2)))
 
-(defmacro wl-summary-put-alike (alike)
-  `(elmo-set-hash-val (format "#%d" (wl-count-lines))
+(defmacro wl-summary-put-alike (alike count)
+  `(elmo-set-hash-val (format "#%d" ,count)
 		      ,alike
 		      wl-summary-alike-hashtb))
 
@@ -2646,24 +2648,27 @@ If ARG, without confirm."
 
 (defun wl-summary-insert-headers (folder func &optional mime-decode)
   (let ((numbers (elmo-folder-list-messages folder 'visible t))
+	(count (wl-count-lines))
 	ov this last alike)
     (buffer-disable-undo (current-buffer))
     (make-local-variable 'wl-summary-alike-hashtb)
     (setq wl-summary-alike-hashtb (elmo-make-hash (* (length numbers) 2)))
     (when mime-decode
       (set-buffer-multibyte default-enable-multibyte-characters))
-    (while (setq ov (elmo-message-entity folder (pop numbers)))
-      (setq this (funcall func ov))
-      (and this (setq this (std11-unfold-string this)))
-      (if (equal last this)
-	  (setq alike (cons ov alike))
-	(when last
-	  (wl-summary-put-alike alike)
-	  (insert last ?\n))
-	(setq alike (list ov)
-	      last this)))
-    (when last
-      (wl-summary-put-alike alike)
+    (mapc (lambda (number)
+	    (setq ov (elmo-message-entity folder number))
+	    (setq this (funcall func ov))
+	    (if (equal last this)
+		(setq alike (cons ov alike))
+	      (when last
+		(wl-summary-put-alike alike count)
+		(insert last ?\n)
+		(setq count (1+ count)))
+	      (setq alike (list ov)
+		    last this)))
+	  numbers)
+    (when (null (eq last this))
+      (wl-summary-put-alike alike count)
       (insert last ?\n))
     (when mime-decode
       (decode-mime-charset-region (point-min) (point-max)
@@ -3074,10 +3079,8 @@ The mark is decided according to the FOLDER and STATUS."
     (let ((inhibit-read-only t)
 	  (buffer-read-only nil)
 	  wl-summary-buffer-disp-msg)
-      (funcall
-       (intern (format "wl-summary-mark-as-%s-internal" flag))
-       inverse
-       wl-summary-buffer-target-mark-list)
+      (wl-summary-set-persistent-mark-internal
+       inverse flag wl-summary-buffer-target-mark-list)
       (wl-summary-delete-all-target-marks))))
 
 (defun wl-summary-target-mark-mark-as-important (&optional remove)
@@ -3434,10 +3437,10 @@ Return non-nil if the mark is updated"
 
 (defun wl-summary-view-old-p ()
   "Return non-nil when summary view cache has old format."
-  (save-excursion
-    (goto-char (point-min))
-    (and wl-summary-buffer-number-list
-	 (not (re-search-forward "\r-?[0-9]+" (point-at-eol) t)))))
+  (when wl-summary-buffer-number-list
+    (save-excursion
+      (goto-char (point-min))
+      (not (re-search-forward "\r-?[0-9]+" (point-at-eol) t)))))
 
 (defun wl-summary-line-format-changed-p ()
   "Return non-nil when summary line format is changed."
@@ -3757,10 +3760,7 @@ Return non-nil if the mark is updated"
 	  (completing-read (format "Range (%s): " default)
 			   (mapcar
 			    (lambda (x) (cons x x))
-			    input-range-list)))
-    (if (string= range "")
-	default
-      range)))
+			    input-range-list) nil nil nil nil default))))
 
 (defun wl-summary-toggle-disp-folder (&optional arg)
   (interactive)
@@ -4684,7 +4684,7 @@ If ARG is numeric number, decode message as following:
 	  (save-excursion
 	    (setq from (std11-field-body "from")
 		  newsgroups (std11-field-body "newsgroups")
-		  message-id (std11-field-body "message-id")
+		  message-id (elmo-get-message-id-from-buffer)
 		  distribution (std11-field-body "distribution"))
 	    ;; Make sure that this article was written by the user.
 	    (unless (wl-address-user-mail-address-p
@@ -4735,7 +4735,7 @@ If ARG is numeric number, decode message as following:
 	       (wl-address-header-extract-address
 		(car (wl-parse-addresses from))))
 	(error "This article is not yours"))
-      (let* ((message-id (std11-field-body "message-id"))
+      (let* ((message-id (elmo-get-message-id-from-buffer))
 	     (followup-to (std11-field-body "followup-to"))
 	     (mail-default-headers
 	      (concat mail-default-headers
