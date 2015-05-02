@@ -460,32 +460,6 @@ displaying the record corresponding to the sender of the current message."
       (wl-draft (wl-address-header-extract-address to) "" (or subj ""))
     (condition-case nil (delete-other-windows) (error))))
 
-;;; @ bbdb-extract-field-value -- stolen from tm-bbdb.
-;;;
-(eval-and-compile
-  (if (fboundp 'bbdb-wl-extract-field-value-internal)
-;;(if (fboundp 'PLEASE_REPLACE_WITH_SEMI-BASED_MIME-BBDB)) ;; mime-bbdb
-      nil
-    (if (and (string< bbdb-version "1.58")
-	     ;;(not (fboundp 'bbdb-extract-field-value) ;; defined as autoload
-	     (not (fboundp 'bbdb-header-start)))
-	(load "bbdb-hooks")
-      (require 'bbdb-hooks))
-    (fset 'bbdb-wl-extract-field-value-internal
-	  (cond
-	   ((fboundp 'tm:bbdb-extract-field-value)
-	    (symbol-function 'tm:bbdb-extract-field-value))
-	   (t (symbol-function 'bbdb-extract-field-value))))
-    (defun bbdb-extract-field-value (field)
-      (let ((value (bbdb-wl-extract-field-value-internal field)))
-	(with-temp-buffer ; to keep raw buffer unibyte.
-	  (set-buffer-multibyte
-	   default-enable-multibyte-characters)
-	  (and value
-	       (eword-decode-string value)))))
-    ))
-
-
 (provide 'bbdb-wl)
 
 ;;; bbdb-wl.el ends here
