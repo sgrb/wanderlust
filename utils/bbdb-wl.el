@@ -45,6 +45,9 @@
        (setq string (replace-match "" nil t string)))
   string)
 
+(defun bbdb-offer-save ()
+  (bbdb-save t))
+
 ;;;###autoload
 (defun bbdb-wl-setup ()
   (add-hook 'wl-message-redisplay-hook 'bbdb-wl-get-update-record)
