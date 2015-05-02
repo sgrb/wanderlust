@@ -538,9 +538,9 @@
 	(setq wl-modeline-biff-state-on wl-biff-state-indicator-on
 	      wl-modeline-biff-state-off wl-biff-state-indicator-off)))))
 
-(defun wl-make-date-string ()
+(defun wl-make-date-string (&optional time)
   (let ((system-time-locale "C"))
-    (format-time-string "%a, %d %b %Y %T %z")))
+    (format-time-string "%a, %d %b %Y %T %z" time)))
 
 (defalias 'wl-setup-folder 'wl-e21-setup-folder-toolbar)
 
@@ -652,9 +652,10 @@ See info under Wanderlust for full documentation.
 Special commands:
 \\{wl-draft-mode-map}"
     (setq font-lock-defaults nil)
-    (add-hook 'after-change-functions
-	      'wl-draft-idle-highlight-set-timer nil t)
-    ))
+    (if wl-draft-jit-highlight
+      (jit-lock-register wl-draft-jit-highlight-function)
+      (add-hook 'after-change-functions
+                'wl-draft-idle-highlight-set-timer nil t))))
 
 (defun wl-draft-key-setup ()
   (define-key wl-draft-mode-map "\C-c\C-y" 'wl-draft-yank-original)

@@ -206,7 +206,7 @@ return value is diffs '(-new -unread -all)."
       (unless entities
 	(setq entities (wl-pop entity-stack))))
     (setq unread-diff (+ unread-diff new-diff))
-    (list (- 0 new-diff) (- 0 unread-diff) (- 0 all-diff))))
+    (list (- new-diff) (- unread-diff) (- all-diff))))
 
 ;; return value
 ;; example: '(("Desktop" group) ("+ml" access) "+ml/wl")
@@ -544,7 +544,7 @@ return value is diffs '(-new -unread -all)."
 		 (setq count (1+ count))
 		 (and (setq name (wl-folder-get-entity-from-buffer))
 		      (wl-append cut-list (list name)))
-		 (forward-line 1))
+		 (forward-line))
 		((< (length pre-indent) (length indent))
 		 (wl-folder-goto-bottom-of-current-folder pre-indent)
 		 (beginning-of-line))
@@ -663,7 +663,7 @@ return value is diffs '(-new -unread -all)."
 		     (progn
 		       (setq pre-indent indent)
 		       (wl-push name cut-list)))
-		 (forward-line 1))
+		 (forward-line))
 		((< (length pre-indent) (length indent))
 		 (wl-folder-goto-bottom-of-current-folder pre-indent)
 		 (beginning-of-line))

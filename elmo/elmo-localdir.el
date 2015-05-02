@@ -183,7 +183,7 @@
 			nil "^[0-9]+$" t)))
 	(killed (elmo-msgdb-killed-list-load (elmo-folder-msgdb-path folder))))
     (if nonsort
-	(cons (or (elmo-max-of-list flist) 0)
+	(cons (elmo-max-of-list flist)
 	      (if killed
 		  (- (length flist)
 		     (elmo-msgdb-killed-list-length killed))
@@ -191,7 +191,8 @@
       (sort flist '<))))
 
 (luna-define-method elmo-folder-append-buffer ((folder elmo-localdir-folder)
-					       &optional flags number)
+					       &optional flags number
+					       return-number)
   (let ((filename (elmo-message-file-name
 		   folder
 		   (or number
@@ -202,7 +203,9 @@
        (point-min) (point-max) filename nil 'no-msg)
       (elmo-folder-preserve-flags
        folder (elmo-msgdb-get-message-id-from-buffer) flags)
-      t)))
+      (if return-number
+	  (car (elmo-folder-status folder))
+	t))))
 
 (defun elmo-folder-append-messages-*-localdir (folder
 					       src-folder
@@ -328,7 +331,7 @@
 	"Packing"
       (dolist (old-number numbers)
 	(setq entity (elmo-msgdb-message-entity msgdb old-number))
-	(when (not (eq old-number new-number)) ; why \=() is wrong..
+	(when (/= old-number new-number)
 	  (elmo-bind-directory dir
 	    ;; xxx  nfs,hardlink
 	    (rename-file (number-to-string old-number)

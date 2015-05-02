@@ -1021,7 +1021,7 @@ Variables used:
 	  (goto-char start)
 	  (while (not (eobp))
 	    (wl-highlight-folder-current-line)
-	    (forward-line 1)))))))
+	    (forward-line)))))))
 
 (defun wl-highlight-folder-path (folder-path)
   "Highlight current folder path...overlay"
@@ -1045,7 +1045,7 @@ Variables used:
 	  (overlay-put ov 'face 'wl-highlight-folder-path-face)
 	  (overlay-put ov 'evaporate t)
 	  (overlay-put ov 'wl-momentary-overlay t))
-	(forward-line 1)))))
+	(forward-line)))))
 
 (defun wl-highlight-action-argument-string (string)
   (put-text-property 0 (length string) 'face
@@ -1081,7 +1081,7 @@ Faces used:
 	(when (or (not lazy)
 		  (null (get-text-property (point) 'face)))
 	  (wl-highlight-summary-current-line))
-	(forward-line 1))
+	(forward-line))
       (unless wl-summary-lazy-highlight
 	(message "Highlighting...done")))))
 
@@ -1130,7 +1130,7 @@ Returns start point of signature."
   (save-excursion
     (goto-char end)
     (if (re-search-backward "\n--+ *\n" beg t)
-	(if (eq (char-after (point)) ?\n)
+	(if (eq (following-char) ?\n)
 	    (1+ (point))
 	  (point))
       end)))
@@ -1171,6 +1171,15 @@ Returns start point of signature."
 	   (setq sep (cdr sep)))
 	 (point)))	;; if no separator found, returns end.
      )))
+
+(defun wl-highlight-citation-prefix-index (prefix)
+  "Return a face index for a given citation prefix"
+  (apply '+ (mapcar (lambda (ch)
+                      (cond
+                        ((memq ch '(?> ?| ?: ?})) 1)
+                        ((memq ch '(9 32)) 0)
+                        (t ch)))
+		    prefix)))
 
 (defun wl-highlight-message (start end hack-sig &optional body-only)
   "Highlight message headers between start and end.
@@ -1252,13 +1261,13 @@ interpreted as cited text.)"
 			   'wl-highlight-message-header-contents))
 			(goto-char hend))
 		    ;; ignore non-header field name lines
-		    (forward-line 1))))))
+		    (forward-line))))))
 	  (when (looking-at
 		 (format "^%s$" (regexp-quote mail-header-separator)))
 	    (put-text-property (match-beginning 0) (match-end 0)
 			       'face 'wl-highlight-header-separator-face)
-	    (forward-line 1))
-	  (let (prefix prefix-face-alist pair end)
+	    (forward-line))
+	  (let (prefix end)
 	    (while (null (progn
 			     ;; Skip invisible region.
 			   (when (invisible-p (point))
@@ -1273,18 +1282,12 @@ interpreted as cited text.)"
 		     (looking-at wl-highlight-citation-prefix-regexp))
 		(setq prefix (buffer-substring (point)
 					       (match-end 0)))
-		(setq pair (assoc prefix prefix-face-alist))
-		(unless pair
-		  (setq pair (cons prefix
-				   (nth (% (length prefix-face-alist)
-					   (length
-					    wl-highlight-citation-face-list))
-					wl-highlight-citation-face-list)))
-		  (setq prefix-face-alist
-			(cons pair prefix-face-alist)))
 		(unless wl-highlight-highlight-citation-too
 		  (goto-char (match-end 0)))
-		(setq current (cdr pair)))
+		(setq current
+                      (nth (% (wl-highlight-citation-prefix-index prefix)
+                              (length wl-highlight-citation-face-list))
+                           wl-highlight-citation-face-list)))
 	       ((and wl-highlight-citation-header-regexp
 		     (looking-at wl-highlight-citation-header-regexp))
 		(setq current 'wl-highlight-message-citation-header)
@@ -1292,11 +1295,11 @@ interpreted as cited text.)"
 	       (t (setq current nil)))
 	      (when current
 		(setq p (point))
-		(forward-line 1) ; this is to put the \n in the face too
+		(forward-line) ; this is to put the \n in the face too
 		(put-text-property p (or end (point)) 'face current)
 		(setq end nil)
-		(forward-char -1))
-	      (forward-line 1)))
+		(backward-char))
+	      (forward-line)))
 	  (run-hooks 'wl-highlight-message-hook))))))
 
 ;; highlight-mouse-line for folder mode

@@ -55,7 +55,7 @@
 (luna-define-method elmo-folder-initialize ((folder
 					     elmo-multi-folder)
 					    name)
-  (while (> (length (car (setq name (elmo-parse-token name ",")))) 0)
+  (while (> (length (car (setq name (elmo-parse-token name "," nil t)))) 0)
     (elmo-multi-folder-set-children-internal
      folder
      (nconc (elmo-multi-folder-children-internal
@@ -250,9 +250,17 @@
 
 (luna-define-method elmo-message-entity-parent ((folder
 						 elmo-multi-folder) entity)
-  (elmo-message-entity
-   folder
-   (elmo-message-entity-field entity 'references)))
+  (let ((references (elmo-message-entity-field entity 'references))
+	parent)
+    ;; In old msgdb, references's field is a string.
+    (when (stringp references)
+      (setq references (list references)))
+    (while references
+      (setq references
+	    (if (setq parent (elmo-message-entity folder (car references)))
+		nil
+	      (cdr references))))
+    parent))
 
 (luna-define-method elmo-message-field ((folder elmo-multi-folder)
 					number field &optional type)
@@ -394,26 +402,21 @@
 
 (luna-define-method elmo-folder-search ((folder elmo-multi-folder)
 					condition &optional numbers)
-  (let* ((flds (elmo-multi-folder-children-internal folder))
-	 (cur-number 0)
-	 numlist
-	 matches)
-    (setq numbers (or numbers
-		      (elmo-folder-list-messages folder)))
-    (while flds
-      (setq cur-number (+ cur-number 1))
-      (setq matches (append matches
-			    (mapcar
-			     (lambda (x)
-			       (+
-				(* (elmo-multi-folder-divide-number-internal
-				    folder)
-				   cur-number)
-				x))
-			     (elmo-folder-search
-			      (car flds) condition))))
-      (setq flds (cdr flds)))
-    (elmo-list-filter numbers matches)))
+  (apply 'nconc
+	 (delq nil
+	       (if (and numbers (listp numbers))
+		   (mapcar (lambda (element)
+			     (when (cdr element)
+			       (elmo-multi-map-numbers
+				folder
+				(car element)
+				(elmo-folder-search
+				 (car element) condition (cdr element)))))
+			   (elmo-multi-split-numbers folder numbers))
+		 (mapcar (lambda (child)
+			   (elmo-multi-map-numbers
+			    folder child (elmo-folder-search child condition numbers)))
+			 (elmo-multi-folder-children-internal folder))))))
 
 (luna-define-method elmo-message-use-cache-p ((folder elmo-multi-folder)
 					      number)

@@ -170,12 +170,19 @@ Supersede `wl-user-mail-address-list'."
   :type 'directory
   :group 'wl)
 
-(defcustom wl-icon-directory (if (fboundp 'locate-data-directory)
-				 (locate-data-directory "wl")
-			       (let ((icons (expand-file-name "wl/icons/"
+(defcustom wl-icon-directory (or
+                              (and (fboundp 'locate-data-directory)
+                                   (locate-data-directory "wl"))
+                              (let ((icons (expand-file-name "wl/icons/"
 							      data-directory)))
-				 (if (file-directory-p icons)
-				     icons)))
+                                (if (file-directory-p icons)
+                                    icons))
+                              (if load-file-name
+                                  (let ((icons (expand-file-name
+                                                "icons"
+                                                (file-name-directory load-file-name))))
+                                    (if (file-directory-p icons)
+                                        icons))))
   "*Directory to load the icon files from, or nil if none."
   :type '(choice (const :tag "none" nil)
 		 string)
@@ -550,9 +557,49 @@ Note: default value follows RFC2822."
   :type 'function
   :group 'wl-draft)
 
+(defcustom wl-default-draft-cite-date-format-string t
+  "*Format string to use for first line of citation in `wl-default-draft-cite'.
+The value is passed to `format-time-string'.
+When non-string and non-nil, call `wl-make-date-string' function.
+When nil, use original message's Date: field as is."
+  :type '(choice (string :tag "Format string")
+		 (const :tag "Call wl-make-date-string function" t)
+		 (const :tag "Use original Date: field" nil))
+  :group 'wl-draft)
+
+(defcustom wl-default-draft-cite-no-date-string "Some time ago"
+  "*String to use for first line of citation in `wl-default-draft-cite'.
+The value is used as is when original message's Date: field is not found."
+  :type 'string
+  :group 'wl-draft)
+
+(defcustom wl-default-draft-cite-no-author-string "you"
+  "*String to use for second line of citation in `wl-default-draft-cite'.
+The value is used as is when original message's From: field is not found."
+  :type 'string
+  :group 'wl-draft)
+
+(defcustom wl-default-draft-cite-time-locale "C"
+  "*Override `system-time-locale' while making time string of citaion header.
+XEmacs is not affected."
+  :type '(choice (string :tag "Specify locale")
+		 (const :tag "Do not override" nil))
+  :group 'wl-draft)
+
+(defcustom wl-default-draft-cite-header-format-string "%s,\n%s wrote:\n"
+  "*Format string to generate citation header.
+The value is passed to `format' function with two string, date and author respectively.  Should be terminated with LF."
+  :type 'string
+  :group 'wl-draft)
+
 (defcustom wl-default-draft-cite-decorate-author t
   "*If non-nil, the author of cited message is arranged by
 `wl-summary-from-func-internal' in `wl-default-draft-cite'."
+  :type 'boolean
+  :group 'wl-draft)
+
+(defcustom wl-draft-preview-process-pgp nil
+  "*When non-nil, PGP processing (encryption, sign) will be done when preview."
   :type 'boolean
   :group 'wl-draft)
 
@@ -2041,17 +2088,23 @@ Attributes specified in the `wl-draft-preview-attributes-list' are displayed."
 
 (defcustom wl-draft-preview-attributes-list '((mail recipients
 						    envelope-from
-						    smtp-posting-server
-						    smtp-posting-port)
+						    send-mail-method
+						    smtp-settings
+						    pop-before-smtp-settings
+						    pgp-processings)
 					      (news newsgroups
-						    nntp-posting-server
-						    nntp-posting-port))
+						    nntp-method
+						    nntp-settings
+						    pgp-processings))
   "*Attribute symbols to display in the draft preview.
 Candidates are following:
 `recipients'
 `envelope-from'
+`send-mail-method'
 `smtp-posting-server'
 `smtp-posting-port'
+`smtp-settings'
+`pop-before-smtp-settings'
 `newsgroups'
 `nntp-posting-server'
 `nntp-posting-port'
@@ -2063,9 +2116,10 @@ Also variables which begin with `wl-' can be specified
 		 (repeat symbol))
   :group 'wl-draft)
 
-(defcustom wl-draft-preview-attributes-buffer-lines 5
-  "*Buffer height for the draft attribute preview."
-  :type 'integer
+(defcustom wl-draft-preview-attributes-buffer-lines t
+  "*Buffer height for the draft attribute preview.  Non-integer means decide height from number of attributes automatically.  Negative-integer means add absolute value to automated height."
+  :type '(choice integer
+		 (const :tag "Automated" t))
   :group 'wl-draft)
 
 (defcustom wl-draft-preview-attributes-buffer-name "*Preview Attributes*"

@@ -1,3 +1,335 @@
+2015-03-08  Kazuhiro Ito  <kzhr@d1.dion.ne.jp>
+
+	* wl.el (wl-check-environment): Checking Message-ID part is almost
+	rewritten.
+
+2015-03-07  Kazuhiro Ito  <kzhr@d1.dion.ne.jp>
+
+	* wl.el (wl-check-environment): Check wl-from more strictly.
+
+2015-03-01  David Maus  <dmaus@ictsoc.de>
+
+	* wl-summary.el (wl-summary-save): Make sure that filename is
+	inside `wl-save-dir'.
+	(wl-summary-save): Use absolute filename when checking if a file
+	with the same name already exists.
+
+2015-02-21  Kazuhiro Ito  <kzhr@d1.dion.ne.jp>
+
+	* wl-mime.el (wl-draft-show-attributes-buffer): Allocate one more
+	line for the case that wl-draft-preview-attributes-buffer-lines is
+	negative.
+
+2015-02-21  Kazuhiro Ito  <kzhr@d1.dion.ne.jp>
+
+	* wl-mime.el (wl-draft-attribute-nntp-posting-function)
+	(wl-draft-attribute-nntp-posting-user)
+	(wl-draft-attribute-nntp-posting-stream-type)
+	(wl-draft-attribute-show-nntp-settings-functions)
+	(wl-draft-attribute-nntp-method-table)
+	(wl-draft-attribute-nntp-method)
+	(wl-draft-attribute-nntp-settings): New functions and varaibles.
+
+	* wl-vars.el (wl-draft-preview-attributes-list): Adjusted to use
+	them.
+
+2015-02-21  Kazuhiro Ito  <kzhr@d1.dion.ne.jp>
+
+	Suppress PGP processing while previewing.  If you need a previous
+	behavior, set wl-draft-preview-process-pgp to t.
+
+	* wl-vars.el (wl-draft-preview-process-pgp): New variable.
+	(wl-draft-preview-attributes-list): Display PGP processing
+	information.
+
+	* wl-mime.el (wl-draft-attribute-pgp-processings): New function.
+	(wl-draft-preview-pgp-processing): New buffer-local variable.
+	(wl-draft-preview-message): Suppress PGP processings when
+	wl-draft-preview-process-pgp is nil.
+
+2015-02-11  Kazuhiro Ito  <kzhr@d1.dion.ne.jp>
+
+	* wl-vars.el (wl-default-draft-cite-date-format-string): Set
+	default to t.
+	(wl-default-draft-cite-no-date-string)
+	(wl-default-draft-cite-no-author-string): New variables.
+	(wl-default-draft-cite-header-format-string): Strip leading "On "
+	from default.
+	(wl-default-draft-cite-time-locale): Fix typo of docstring.
+
+	* wl-draft.el (wl-default-draft-cite): Adjusted for above changes.
+
+2015-02-03  Kazuhiro Ito  <kzhr@d1.dion.ne.jp>
+
+	* wl-vars.el (wl-default-draft-cite-time-locale): New variable.
+
+	* wl-draft.el (wl-default-draft-cite): Override system-time-locale
+	with wl-default-draft-cite-time-locale.
+
+2015-02-03  Kazuhiro Ito  <kzhr@d1.dion.ne.jp>
+
+	Citation header is now customizable.
+
+	* wl-vars.el (wl-default-draft-cite-header-format-string): New
+	variable.
+
+	* wl-draft.el (wl-default-draft-cite): Use it.
+
+2015-02-03  Kazuhiro Ito  <kzhr@d1.dion.ne.jp>
+
+	* wl-vars.el (wl-default-draft-cite-date-format-string): When
+	non-string and non-nil, specify to call wl-make-date-stirng
+	function.
+
+	* wl-draft.el (wl-default-draft-cite): Likewise.
+
+2015-02-02  Kazuhiro Ito  <kzhr@d1.dion.ne.jp>
+
+	* wl-e21.el (wl-make-date-string): Accept optional argument TIME.
+
+	* wl-util.el (wl-make-date-string): Likewise.
+
+	* wl-xmas.el (wl-make-date-string): Likewise.
+
+2015-02-02  Kazuhiro Ito  <kzhr@d1.dion.ne.jp>
+
+	* wl-vars.el (wl-default-draft-cite-date-format-string): Contains
+	only date representing string.  Nil means to use original header's
+	date field (previous behavior).
+
+	* wl-draft.el (wl-default-draft-cite): Fix format string for
+	citation header according to the above change.  Handle the case
+	that wl-default-draft-cite-date-format-string is nil.
+
+2015-01-26  Erik Hetzner  <egh@e6h.org>
+
+	* wl-draft.el (wl-default-draft-cite): Fix typo.
+
+2015-01-22  Erik Hetzner  <egh@e6h.org>
+
+	* wl-draft.el (wl-default-draft-cite): Support custom date format
+	string.
+	(wl-default-draft-cite): Use it.
+
+2014-11-09  Erik Hetzner  <egh@e6h.org>
+
+	* wl-vars.el (wl-icon-directory): Support loading icons from
+	icons/ dir in package (for MELPA).
+
+2014-11-15  Kazuhiro Ito  <kzhr@d1.dion.ne.jp>
+
+	Remove '1' argument for forward-char, backward-char and
+	forward-line.  Use following-char and preceding-char preferredly.
+
+	* wl-action.el (wl-summary-target-mark-set-action)
+	(wl-summary-collect-temp-mark)
+	(wl-summary-exec-action-resend-subr, wl-summary-remove-argument)
+	(wl-summary-collect-numbers-region, wl-summary-print-argument)
+	(wl-summary-unmark-region, wl-summary-mark-region-subr)
+	(wl-summary-delete-all-mark): Likewise.
+
+	* wl-address.el (wl-address-make-alist-from-alias-file): Likewise.
+
+	* wl-draft.el (wl-draft-get-header-delimiter, wl-draft-save)
+	(wl-draft-delete-fields, wl-draft-get-fcc-list)
+	(wl-draft-body-goto-top, wl-user-agent-insert-body): Likewise.
+
+	* wl-fldmgr.el (wl-fldmgr-cut-region, wl-fldmgr-copy-region):
+	Likewise.
+
+	* wl-folder.el (wl-folder-next-entity)
+	(wl-folder-next-entity-skip-invalid, wl-folder-move-path)
+	(wl-folder-check-region, wl-folder-sync-region)
+	(wl-folder-mark-as-read-all-region): Likewise.
+
+	* wl-highlight.el (wl-highlight-folder)
+	(wl-highlight-folder-path, wl-highlight-summary)
+	(wl-highlight-signature-search-simple, wl-highlight-message): Likewise.
+
+	* wl-message.el (wl-message-narrow-to-page)
+	(wl-message-uu-substring, wl-message-header-narrowing-1): Likewise.
+
+	* wl-score.el (wl-score-string, wl-score-followup): Likewise.
+
+	* wl-summary.el (wl-summary-update-mark-and-highlight-window)
+	(wl-summary-prefetch-region-no-mark)
+	(wl-summary-number-list-from-region)
+	(wl-summary-resume-cache-status, wl-summary-update-status-marks)
+	(wl-summary-jump-to-msg, wl-summary-make-number-list)
+	(wl-summary-goto-bottom-of-sub-thread)
+	(wl-summary-delete-all-temp-marks)
+	(wl-summary-cursor-move-surface, wl-summary-save-region): Likewise.
+
+	* wl-thread.el (wl-thread-open-all)
+	(wl-thread-delete-line-from-buffer, wl-thread-delete-message)
+	(wl-thread-goto-bottom-of-sub-thread)
+	(wl-thread-remove-argument-region)
+	(wl-thread-print-argument-region, wl-thread-close)
+	(wl-thread-update-indent-string-region): Likewise.
+
+	* wl-util.el (wl-set-string-width, pp-to-string): Likewise.
+
+	* wl.el (wl-plugged-drawing, wl-plugged-redrawing-switch)
+	(wl-plugged-change, wl-plugged-toggle)
+	(wl-plugged-move-to-previous): Likewise.
+
+2014-11-15  Kazuhiro Ito  <kzhr@d1.dion.ne.jp>
+
+	* wl-fldmgr.el (wl-fldmgr-delete-entity-hashtb): Remove redundant
+	code.
+
+	* wl-summary.el (wl-summary-sync-update): Likewise.
+
+2014-11-14  Kazuhiro Ito  <kzhr@d1.dion.ne.jp>
+
+	* wl-util.el (wl-biff-event-handler): Do not skip idle-timer.
+	Avoid direct access for timer's parameter if possible.
+
+	Cf. https://github.com/wanderlust/wanderlust/pull/52
+	    https://github.com/wanderlust/wanderlust/pull/84
+	    https://github.com/wanderlust/wanderlust/pull/85
+
+2014-11-08  Kazuhiro Ito  <kzhr@d1.dion.ne.jp>
+
+	* wl-folder.el (wl-folder-pick): Call elmo-folder-search with
+	setting NUMBERS to t.
+
+	* wl-summary.el (wl-summary-pick): Call elmo-folder-search with
+	setting NUMBERS to t if FROM-LIST is not specified.
+
+2014-10-27  Kazuhiro Ito  <kzhr@d1.dion.ne.jp>
+
+	* wl-mime.el (wl-mime-pgp-verify-region-with-epg): Set
+	epa-info-buffer's buffer to the current buffer when the buffer is
+	displyed.
+
+2014-09-06  Kazuhiro Ito  <kzhr@d1.dion.ne.jp>
+
+	* wl-action.el (wl-summary-get-dispose-folder): Minor refactoring.
+
+2014-07-12  Kazuhiro Ito  <kzhr@d1.dion.ne.jp>
+
+	* wl-util.el (wl-repeat-string): Refactored.
+
+2014-07-07  Kazuhiro Ito  <kzhr@d1.dion.ne.jp>
+
+	* wl-util.el (wl-draft-make-message-id-from-address-delimiter):
+	New customizable variable.
+	(wl-draft-make-message-id-from-address): Use it.  Default
+	delimiter is changed from "%" to "-".
+
+2014-07-06  Kazuhiro Ito  <kzhr@d1.dion.ne.jp>
+
+	* wl-draft.el (wl-draft-send-mail-with-sendmail): Set
+	buffer-file-coding-system to raw-text.  let-bind
+	select-safe-coding-system-function to nil before calling
+	sendmail-send-it.
+	Cf. https://github.com/wanderlust/wanderlust/issues/66
+
+2014-07-03  Juliusz Chroboczek  <jch@pps.univ-paris-diderot.fr>
+
+	* wl-draft.el: Require wl-util, since we're using macros from there.
+
+2014-06-09  David Maus  <dmaus@ictsoc.de>
+
+	* wl-draft.el (wl-draft-do-fcc): Open fcc folder before appending
+	the message.
+
+2014-05-30  Kazuhiro Ito  <kzhr@d1.dion.ne.jp>
+
+	* wl-refile.el (wl-refile-guess-by-msgid): Add the comment for old
+	msgdb.
+
+2014-05-25  David Maus  <dmaus@ictsoc.de>
+
+	* wl-draft.el (wl-draft-save, wl-draft-reedit)
+	(wl-draft-buffer-change-number): Use draft folder petname if
+	defined.
+
+	* wl-util.el (wl-collect-draft): Use draft folder petname if
+	defined.
+
+2014-05-24  Kazuhiro Ito  <kzhr@d1.dion.ne.jp>
+
+	* wl-refile.el (wl-refile-guess-by-msgid): Check type of
+	references field's value.
+
+2014-05-18  Kazuhiro Ito  <kzhr@d1.dion.ne.jp>
+
+	* wl-summary.el (wl-summary-insert-thread): Report progress.
+
+2014-05-18  Kazuhiro Ito  <kzhr@d1.dion.ne.jp>
+
+	* wl-summary.el (wl-summary-sync-update): Do not sort
+	elmo-list-diff's result.
+
+2014-05-17  Kazuhiro Ito  <kzhr@d1.dion.ne.jp>
+
+	* wl-refile.el (wl-refile-guess-by-msgid): Assume references
+	field's value is list.
+
+2014-05-17  Kazuhiro Ito  <kzhr@d1.dion.ne.jp>
+
+	* wl-summary.el (wl-summary-default-subject-filter): Minor
+	refactoring.
+
+2014-05-17  Kazuhiro Ito  <kzhr@d1.dion.ne.jp>
+
+	* wl-summary.el (wl-summary-delete-messages-on-buffer)
+	(wl-summary-sync-update): Use elmo-sort-uniq-number-list instead
+	of elmo-uniq-list.
+
+2014-02-22  Kazuhiro Ito  <kzhr@d1.dion.ne.jp>
+
+	* wl-util.el (wl-biff-check-folder): Never return nil.
+
+2014-02-08  Kazuhiro Ito  <kzhr@d1.dion.ne.jp>
+
+	* wl-mime.el (wl-mime-preview-application/pgp): Handle errors in
+	decryption.
+
+2014-01-06  Kazuhiro Ito  <kzhr@d1.dion.ne.jp>
+
+	* wl-mime.el (wl-draft-preview-message): Hide attribute whose
+	value is nil.
+	(wl-draft-attribute-show-smtp-settings-functions)
+	(wl-draft-attribute-smtp-settings)
+	(wl-draft-attribute-show-pop-before-smtp-settings-functions)
+	(wl-draft-attribute-pop-before-smtp-settings)
+	(wl-draft-attribute-hide-send-mail-method-functions)
+	(wl-draft-attribute-send-mail-method-table)
+	(wl-draft-attribute-send-mail-method): New functions and variables.
+
+	* wl-vars.el (wl-draft-preview-attributes-list): Use them by
+	default.
+
+2014-01-04  Kazuhiro Ito  <kzhr@d1.dion.ne.jp>
+
+	* wl-mime.el (wl-draft-show-attributes-buffer): when
+	wl-draft-preview-attributes-buffer-lines is negative or
+	non-integer, calculate buffer's height from number of attributes.
+
+	* wl-vars.el (wl-draft-preview-attributes-buffer-lines):
+	Likewise. Now default is t.
+
+2013-12-25  Kazuhiro Ito  <kzhr@d1.dion.ne.jp>
+
+	* wl-draft.el: Use NOERROR option of require funciton instead of
+	condition-case.
+
+	* wl-folder.el: Likewise.
+
+	* wl-mime.el: Likewise.
+
+	* wl-summary.el: Likewise.
+
+	* wl-util.el: Likewise.
+
+2013-12-23  Herbert J. Skuhra  <hskuhra@eumx.net>
+
+	* wl.el (TOP, wl-init): Fix the case that wl-news.el does not
+	exist, mostly run in expanded place.
+
 2013-06-19  Kazuhiro Ito  <kzhr@d1.dion.ne.jp>
 
 	* wl-news.el.in: Explicitly specify file coding.
@@ -168,6 +500,11 @@
 	* wl-highlight.el (wl-highlight-message): Check eobp after
 	skipping invisible region.
 
+2012-03-18  David Maus  <dmaus@ictsoc.de>
+
+	* wl-mime.el: Remove hard dependency on mime-pgp.
+	* wl.el (wl-init): Remove hard dependency on wl-news.
+
 2012-04-14  Kazuhiro Ito  <kzhr@d1.dion.ne.jp>
 
 	* wl-draft.el (wl-draft-config-exec): Suppress real-time
@@ -202,6 +539,7 @@
 
 	* wl-draft.el (wl-smtp-extension-bind): Use
 	elmo-get-network-stream-type.
+>>>>>>> master
 
 2012-02-18  David Maus  <dmaus@ictsoc.de>
 
@@ -255,6 +593,12 @@
 	scroll-by-SPC/BS.
 
 	* wl-util.el (wl-y-or-n-p-with-scroll): Do not use case().
+
+2011-06-05  David Maus  <dmaus@ictsoc.de>
+
+	* wl-draft.el (wl-draft-save): Obtain number of appended draft
+	message by `elmo-folder-append-buffer', handle case UID of
+	appended message could not be found.
 
 2011-06-03  Erik Hetzner  <egh@e6h.org>
 

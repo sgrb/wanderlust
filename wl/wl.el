@@ -31,6 +31,7 @@
 ;;; Code:
 ;;
 
+(require 'std11)
 (require 'elmo)
 (require 'wl-version)			; reduce recursive-load-depth
 
@@ -59,7 +60,7 @@
 (require 'wl-action)
 (require 'wl-thread)
 (require 'wl-address)
-(require 'wl-news)
+(require 'wl-news nil t)
 
 (wl-draft-mode-setup)
 (require 'wl-draft)
@@ -413,7 +414,7 @@ Entering Plugged mode calls the value of `wl-plugged-mode-hook'."
     (goto-char (point-min))
     (while (not (eobp))
       (wl-highlight-plugged-current-line)
-      (forward-line 1)))
+      (forward-line)))
   (set-buffer-modified-p nil)
   (count-lines (point-min) (point-max)))
 
@@ -426,7 +427,7 @@ Entering Plugged mode calls the value of `wl-plugged-mode-hook'."
     (delete-region (match-beginning 1) (match-end 1))
     (insert (wl-plugged-string switch time))
     (wl-highlight-plugged-current-line)
-    (forward-line 1)))
+    (forward-line)))
 
 (defun wl-plugged-redrawing (plugged-alist)
   (let ((buffer-read-only nil)
@@ -483,7 +484,7 @@ Entering Plugged mode calls the value of `wl-plugged-mode-hook'."
 		(enlarge-window 2))))
 	(error))
       (goto-char (point-min))
-      (forward-line 1)
+      (forward-line)
       (wl-plugged-move-to-next)))) ;; goto first entry
 
 (defsubst wl-plugged-get-server ()
@@ -506,9 +507,9 @@ Entering Plugged mode calls the value of `wl-plugged-mode-hook'."
 	(let (variable switch name)
 	  (goto-char cur-point)
 	  (when (and (not (bobp))
-		     (not (eq (char-before) (string-to-char " "))))
+		     (not (eq (preceding-char) (string-to-char " "))))
 	    (if (re-search-backward " [^ ]+" nil t)
-		(forward-char 1)
+		(forward-char)
 	      (re-search-backward "^[^ ]+" nil t)))
 	  (when (looking-at "\\([^ :[]+\\):?\\[\\([^]]+\\)\\]")
 	    (setq name (elmo-match-buffer 1))
@@ -606,7 +607,7 @@ Entering Plugged mode calls the value of `wl-plugged-mode-hook'."
 
 (defun wl-plugged-move-to-previous ()
   (interactive)
-  (if (eq (char-before) ?\]) (forward-char -1))
+  (if (eq (preceding-char) ?\]) (backward-char))
   (when (re-search-backward "\\[\\([^]]+\\)\\]" nil t)
     (let ((pos (match-beginning 1)))
       (if (invisible-p pos)
@@ -740,7 +741,8 @@ Entering Plugged mode calls the value of `wl-plugged-mode-hook'."
      (elmo-define-signal-filter (listener folder old-number new-number)
        (and folder
 	    (string= (elmo-folder-name-internal folder) wl-draft-folder))))
-    (wl-news-check)
+    (when (featurep 'wl-news)
+      (wl-news-check))
     (setq wl-init t)
     ;; This hook may contain the functions `wl-plugged-init-icons' and
     ;; `wl-biff-init-icons' for reasons of system internal to accord
@@ -748,23 +750,60 @@ Entering Plugged mode calls the value of `wl-plugged-mode-hook'."
     (run-hooks 'wl-init-hook)))
 
 (defun wl-check-environment (no-check-folder)
-  (unless wl-from (error "Please set `wl-from' to your mail address"))
+  ;; wl-from
+  (let* ((lal (std11-lexical-analyze wl-from))
+	 (ret (std11-parse-mailbox lal))
+	 address)
+    (unless
+	;; Copied and modified from wl-draft-std11-parse-addresses.
+	(when (or (and (eq (length lal) 1)
+		       (eq (car (car lal)) 'spaces))
+		  ret)
+	  (setq lal (cdr ret))
+	  (while (eq 'spaces (car (car lal)))
+	    (setq lal (cdr lal)))
+	  (null lal))
+      (error "Please set `wl-from' to your mail address"))
+    (setq address (std11-address-string (car ret)))
+    (when (string-match "@[^.]+$" address)
+      (elmo-warning
+       "Domain portion of `wl-from' seems to be a local hostname.")))
+
   ;; Message-ID
   (when wl-insert-message-id
     (let ((message-id (funcall wl-message-id-function))
+	  (custom-msgid-function
+	   (null (eq wl-message-id-function
+		     'wl-draft-make-message-id-string)))
 	  domain)
-      (unless (string-match "^<\\([^@]*\\)@\\([^@]*\\)>$" message-id)
-	(cond
-	 ((string-match "@" wl-message-id-domain)
-	  (error "Please remove `@' from `wl-message-id-domain'"))
-	 (t
-	  (error
-	   "Check around `wl-message-id-function' to get valid Message-ID string"))))
-      (setq domain (match-string 2 message-id))
-      (if (or (not (string-match "[^.]\\.[^.]" domain))
-	      (string= domain "localhost.localdomain"))
-	  (elmo-warning
-	   "Please set `wl-message-id-domain' to get valid Message-ID string."))))
+      (unless (std11-parse-msg-id
+	       (std11-lexical-analyze message-id))
+	;; Invalid Message-ID
+	(error
+	 (cond
+	  (custom-msgid-function
+	   "Check around `wl-message-id-function' to get valid Message-ID")
+	  (wl-message-id-use-message-from
+	   ;; `wl-from' is already checked.
+	   "Check `wl-message-id-hash-function' and `wl-draft-make-message-id-from-address-delimiter' to get valid Message-ID")
+	  ((and wl-message-id-domain
+		(string-match "@" wl-message-id-domain))
+	   "Remove `@' from `wl-message-id-domain'")
+	  (t
+	   "Check `wl-message-id-domain' to get valid Message-ID"))))
+      (when (string-match "@[^.]+$" message-id)
+	(elmo-warning
+	 (cond
+	  (custom-msgid-function
+	   "Please check around `wl-message-id-function' to get valid Message-ID.")
+	  (wl-message-id-use-message-from
+	   "`wl-from' address is used to make Message-ID string.")
+	  (wl-message-id-domain
+	   "`wl-message-id-domain' seems to be a local hostname.")
+	  (t
+	   "Please set `wl-message-id-domain' to get valid Message-ID."))))
+      ))
+
   ;; folders
   (when (not no-check-folder)
     (let ((draft-folder (wl-folder-get-elmo-folder wl-draft-folder))

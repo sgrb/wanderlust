@@ -218,10 +218,11 @@
    type))
 
 (luna-define-method elmo-folder-append-buffer ((folder elmo-filter-folder)
-					       &optional flag number)
+					       &optional flag number
+					       return-number)
   (elmo-folder-append-buffer
    (elmo-filter-folder-target-internal folder)
-   flag number))
+   flag number return-number))
 
 (defun elmo-folder-append-messages-filter-* (dst-folder
 					     src-folder
@@ -281,9 +282,8 @@
     (if visible-only
 	(elmo-living-messages list killed-list)
       (if (and in-msgdb killed-list list)
-	  (elmo-uniq-sorted-list
-	   (sort (nconc (elmo-number-set-to-number-list killed-list) list) #'<)
-	   #'eq)
+	  (elmo-sort-uniq-number-list
+	   (nconc (elmo-number-set-to-number-list killed-list) list))
 	list))))
 
 (luna-define-method elmo-folder-list-messages-internal
@@ -363,13 +363,16 @@
 (luna-define-method elmo-folder-search ((folder elmo-filter-folder)
 					condition &optional numbers)
   ;; search from messages in this folder
-  (let ((result (elmo-folder-search
-		 (elmo-filter-folder-target-internal folder)
-		 condition
-		 (elmo-folder-list-messages folder))))
-    (if numbers
-	(elmo-list-filter numbers result)
-      result)))
+  (elmo-folder-search
+   (elmo-filter-folder-target-internal folder)
+   condition
+   (cond
+    ((null numbers)
+     (elmo-folder-list-messages folder))
+    ((listp numbers)
+     numbers)
+    (t
+     (elmo-folder-list-messages folder 'visible 'in-msgdb)))))
 
 (luna-define-method elmo-message-use-cache-p ((folder elmo-filter-folder)
 					      number)

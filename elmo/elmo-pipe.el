@@ -44,14 +44,13 @@
 (luna-define-method elmo-folder-initialize ((folder elmo-pipe-folder)
 					    name)
   (when (string-match "^\\([^|]*\\)|\\(:?\\)\\(.*\\)$" name)
-    (elmo-pipe-folder-set-src-internal folder
-				       (elmo-get-folder
-					(match-string 1 name)))
-    (elmo-pipe-folder-set-dst-internal folder
-				       (elmo-get-folder
-					(match-string 3 name)))
-    (elmo-pipe-folder-set-copy-internal folder
-					(string= ":" (match-string 2 name))))
+    ;; elmo-get-folder might overwrite our match data
+    (let ((src (match-string 1 name))
+          (dst (match-string 3 name))
+          (copy (string= ":" (match-string 2 name))))
+      (elmo-pipe-folder-set-src-internal folder (elmo-get-folder src))
+      (elmo-pipe-folder-set-dst-internal folder (elmo-get-folder dst))
+      (elmo-pipe-folder-set-copy-internal folder copy)))
   (elmo-pipe-connect-signals folder (elmo-pipe-folder-dst-internal folder))
   folder)
 
@@ -102,9 +101,10 @@
 			       same-number))
 
 (luna-define-method elmo-folder-append-buffer ((folder elmo-pipe-folder)
-					       &optional flag number)
+					       &optional flag number
+					       return-number)
   (elmo-folder-append-buffer (elmo-pipe-folder-dst-internal folder)
-			     flag number))
+			     flag number return-number))
 
 (luna-define-method elmo-message-fetch ((folder elmo-pipe-folder)
 					number strategy

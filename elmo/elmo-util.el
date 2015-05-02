@@ -58,9 +58,9 @@
   ;; Check whether FLIM's MIME-charset string encoder/decoders work on
   ;; unibyte buffer.
   (static-if (fboundp 'mime-charset-encode-string)
-      `(with-current-buffer (get-buffer-create elmo-multibyte-buffer-name)
-	 ,@body))
-  `(progn ,@body))
+      `(progn ,@body)
+    `(with-current-buffer (get-buffer-create elmo-multibyte-buffer-name)
+       ,@body)))
 
 (put 'elmo-with-enable-multibyte 'lisp-indent-function 0)
 (def-edebug-spec elmo-with-enable-multibyte t)
@@ -449,10 +449,8 @@ Return value is a cons cell of (STRUCTURE . REST)"
 
 (defsubst elmo-delete-cr-region (start end)
   "Delete CR from region."
-  (save-excursion
-    (goto-char start)
-    (while (search-forward "\r\n" end t)
-      (replace-match "\n")) ))
+  (let (inhibit-eol-conversion)
+    (decode-coding-region start (or end (point-max)) 'raw-text-dos)))
 
 (defsubst elmo-delete-cr-buffer ()
   "Delete CR from buffer."
@@ -460,21 +458,14 @@ Return value is a cons cell of (STRUCTURE . REST)"
 
 (defsubst elmo-delete-cr-get-content-type ()
   (save-excursion
-    (goto-char (point-min))
-    (while (search-forward "\r\n" nil t)
-      (replace-match "\n"))
+    (elmo-delete-cr-buffer)
     (goto-char (point-min))
     (or (std11-field-body "content-type")
 	t)))
 
 (defun elmo-delete-cr (string)
-  (save-match-data
-    (elmo-set-work-buf
-      (insert string)
-      (goto-char (point-min))
-      (while (search-forward "\r\n" nil t)
-	(replace-match "\n"))
-      (buffer-string))))
+  (let (inhibit-eol-conversion)
+    (decode-coding-string string 'raw-text-dos)))
 
 (defun elmo-last (list)
   (and list (nth (1- (length list)) list)))
@@ -509,9 +500,12 @@ Return value is a cons cell of (STRUCTURE . REST)"
       (setq list (cdr list))))
   list)
 
+(defun elmo-sort-uniq-number-list (list)
+  (elmo-uniq-sorted-list (sort list #'<) #'eq))
+
 (defun elmo-union (l1 l2)
   "Make a union of two lists"
-  (elmo-uniq-sorted-list (sort (append l1 l2) #'<)))
+  (elmo-sort-uniq-number-list (append l1 l2)))
 
 (defun elmo-list-insert (list element after)
   (let* ((match (memq after list))
@@ -546,13 +540,7 @@ Return value is a cons cell of (STRUCTURE . REST)"
 	)))
 
 (defun elmo-max-of-list (nlist)
-  (let ((l nlist)
-	(max-num 0))
-    (while l
-      (if (< max-num (car l))
-	  (setq max-num (car l)))
-      (setq l (cdr l)))
-    max-num))
+  (apply #'max 0 nlist))
 
 (defun elmo-concat-path (path filename)
   (if (not (string= path ""))
@@ -930,28 +918,19 @@ the directory becomes empty after deletion."
   (let ((clist1 (sort (copy-sequence list1) #'<))
 	(clist2 (sort (copy-sequence list2) #'<))
 	list1-only list2-only)
-    (while (or clist1 clist2)
-      (cond
-       ((null clist1)
-	(while clist2
-	  (setq list2-only (cons (car clist2) list2-only))
-	  (setq clist2 (cdr clist2))))
-       ((null clist2)
-	(while clist1
-	  (setq list1-only (cons (car clist1) list1-only))
-	  (setq clist1 (cdr clist1))))
-       ((< (car clist1) (car clist2))
-	(while (and clist1 (< (car clist1) (car clist2)))
-	  (setq list1-only (cons (car clist1) list1-only))
-	  (setq clist1 (cdr clist1))))
-       ((< (car clist2) (car clist1))
-	(while (and clist2 (< (car clist2) (car clist1)))
-	  (setq list2-only (cons (car clist2) list2-only))
-	  (setq clist2 (cdr clist2))))
-       ((= (car clist1) (car clist2))
-	(setq clist1 (cdr clist1)
-	      clist2 (cdr clist2)))))
-    (list list1-only list2-only)))
+    (while (and clist1 clist2)
+      (cond ((= (car clist1) (car clist2))
+	     (setq clist1 (cdr clist1)
+		   clist2 (cdr clist2)))
+	    ((car-less-than-car clist1 clist2)
+	     (setq list1-only (cons (car clist1) list1-only)
+		   clist1 (cdr clist1)))
+	    (t ;; (car-less-than-car clist2 clist1)
+	     (setq list2-only (cons (car clist2) list2-only)
+		   clist2 (cdr clist2)))))
+    ;; Keep sorted orders.
+    (list (nconc (nreverse list1-only) clist1)
+	  (nconc (nreverse list2-only) clist2))))
 
 (defun elmo-list-diff-nonsortable (list1 list2)
   (let ((clist1 (copy-sequence list1))
@@ -1328,11 +1307,16 @@ MESSAGE is a doing part of progress message."
 	(prin1-to-string word)
       word)))
 
-(defmacro elmo-string (string)
-  "STRING without text property."
-  `(let ((obj (copy-sequence ,string)))
-     (and obj (set-text-properties 0 (length obj) nil obj))
-     obj))
+(static-cond
+ ((fboundp 'substring-no-properties)
+  (defalias 'elmo-string 'substring-no-properties))
+ (t
+  (defmacro elmo-string (string &optional from to)
+    "Return a substring of STRING, without text properties.
+It starts at zero-indexed index FROM and ends before TO."
+    `(let ((obj (substring ,string (or ,from 0) ,to)))
+       (set-text-properties 0 (length obj) nil obj)
+       obj))))
 
 (defun elmo-flatten (list-of-list)
   "Flatten LIST-OF-LIST."
@@ -1516,8 +1500,9 @@ ELT must be a string.  Upper-case and lower-case letters are treated as equal."
 	((functionp requirement)
 	 (funcall requirement token))))
 
-(defun elmo-parse-token (string &optional seps requirement)
-  "Parse atom from STRING using SEPS as a string of separator char list."
+(defun elmo-parse-token (string &optional seps requirement asis)
+  "Parse atom from STRING using SEPS as a string of separator char list.
+When optional argument ASIS is non-nil, keep '\\' and '\"' from result."
   (let ((len (length string))
 	(seps (and seps (string-to-char-list seps)))
 	(i 0)
@@ -1529,10 +1514,14 @@ ELT must be a string.  Upper-case and lower-case letters are treated as equal."
 	(setq c (aref string i))
 	(cond
 	 ((and in (eq c ?\\))
+	  (when asis
+	    (setq content (cons c content)))
 	  (setq i (1+ i)
 		content (cons (aref string i) content)
 		i (1+ i)))
 	 ((eq c ?\")
+	  (when asis
+	    (setq content (cons c content)))
 	  (setq in (not in)
 		i (1+ i)))
 	 (in (setq content (cons c content)
@@ -1900,7 +1889,7 @@ If the cache is partial file-cache, TYPE is 'partial."
   (concat "<" (elmo-recover-string-from-filename filename) ">"))
 
 (defsubst elmo-cache-get-path-subr (msgid)
-  (format "%02X" (logand (apply '+ (string-to-list msgid)) 31)))
+  (format "%02X" (logand (apply #'+ (string-to-list msgid)) 31)))
 
 ;;;
 (defun elmo-file-cache-get-path (msgid &optional section)
@@ -2188,7 +2177,7 @@ Optional argument DAYS specifies the days to expire caches."
     "Display a warning. ARGS are passed to `format'."
     (with-current-buffer (get-buffer-create elmo-warning-buffer-name)
       (goto-char (point-max))
-      (funcall 'insert (apply 'format (append args '("\n"))))
+      (funcall #'insert (apply #'format (append args '("\n"))))
       (ignore-errors (recenter 1))
       (display-buffer elmo-warning-buffer-name))))
 
@@ -2295,12 +2284,20 @@ If ALIST is nil, `elmo-obsolete-variable-alist' is used."
       (std11-narrow-to-header)
       (elmo-msgdb-get-message-id-from-header))))
 
+(defun elmo-msgdb-get-message-ids-from-header (field)
+  (mapcar 'std11-msg-id-string
+	  (std11-parse-msg-ids-string (std11-fetch-field field))))
+
 (defun elmo-msgdb-get-references-from-header ()
-  (if elmo-msgdb-prefer-in-reply-to-for-parent
-      (or (elmo-msgdb-get-last-message-id (std11-fetch-field "in-reply-to"))
-	  (elmo-msgdb-get-last-message-id (std11-fetch-field "references")))
-    (or (elmo-msgdb-get-last-message-id (std11-fetch-field "references"))
-	(elmo-msgdb-get-last-message-id (std11-fetch-field "in-reply-to")))))
+  (let ((irt (elmo-msgdb-get-message-ids-from-header "in-reply-to"))
+	(refs (elmo-msgdb-get-message-ids-from-header "references")))
+    (delq nil
+	  (elmo-uniq-list
+	   (nreverse
+	    (if elmo-msgdb-prefer-in-reply-to-for-parent
+		(nconc refs irt)
+	      (nconc irt refs)))))))
+
 
 (defsubst elmo-msgdb-insert-file-header (file)
   "Insert the header of the article.  Buffer contents after point are deleted."
@@ -2314,14 +2311,13 @@ If ALIST is nil, `elmo-obsolete-variable-alist' is used."
       ;; Read until header separator is found.
       (while (null done)
 	(setq done
-	      (null
-	       (eq elmo-msgdb-file-header-chop-length
-		   (nth 1 (insert-file-contents-as-binary
-			   file nil beg
-			   (incf beg elmo-msgdb-file-header-chop-length))))))
+	      (/= elmo-msgdb-file-header-chop-length
+		  (nth 1 (insert-file-contents-as-binary
+			  file nil beg
+			  (incf beg elmo-msgdb-file-header-chop-length)))))
 	(if first
 	    (setq first nil)
-	  (forward-char -1))
+	  (backward-char))
 	(elmo-delete-cr-region (point) nil)
 	(setq done (or (search-forward "\n\n" nil 'move)
 		       done)))
@@ -2357,9 +2353,9 @@ If ALIST is nil, `elmo-obsolete-variable-alist' is used."
 	  (skip-chars-forward "^\"\\,(")
 	  (setq char (following-char))
 	  (cond ((= char ?\\)
-		 (forward-char 1)
+		 (forward-char)
 		 (if (not (eobp))
-		     (forward-char 1)))
+		     (forward-char)))
 		((= char ?,)
 		 (setq s (buffer-substring start (point)))
 		 (if (or (null (string-match "^[\t\f\n\r ]+$" s))
@@ -2371,7 +2367,7 @@ If ALIST is nil, `elmo-obsolete-variable-alist' is used."
 		 (re-search-forward "[^\\]\"" nil 0))
 		((= char ?\()
 		 (let ((parens 1))
-		   (forward-char 1)
+		   (forward-char)
 		   (while (and (not (eobp)) (not (zerop parens)))
 		     (re-search-forward "[()]" nil 0)
 		     (cond ((or (eobp)

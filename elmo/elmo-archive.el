@@ -298,7 +298,7 @@ TYPE specifies the archiver's symbol."
 	    (error "%s exited abnormally!" method))
 	  (goto-char (point-min))
 	  (when (re-search-forward elmo-archive-header-regexp nil t)
-	    (forward-line 1)
+	    (forward-line)
 	    (setq header-end (point))
 	    (when (re-search-forward elmo-archive-header-regexp nil t)
 	      (beginning-of-line)
@@ -310,7 +310,7 @@ TYPE specifies the archiver's symbol."
 						    (match-string 1)))))))
       (error "%s does not exist" file))
     (if nonsort
-	(cons (or (elmo-max-of-list file-list) 0)
+	(cons (elmo-max-of-list file-list)
 	      (if killed
 		  (- (length file-list)
 		     (elmo-msgdb-killed-list-length killed))
@@ -576,11 +576,12 @@ TYPE specifies the archiver's symbol."
   (elmo-archive-message-fetch-internal folder number))
 
 (luna-define-method elmo-folder-append-buffer ((folder elmo-archive-folder)
-					       &optional flags number)
-  (elmo-archive-folder-append-buffer folder flags number))
+					       &optional flags number
+					       return-number)
+  (elmo-archive-folder-append-buffer folder flags number return-number))
 
 ;; verrrrrry slow!!
-(defun elmo-archive-folder-append-buffer (folder flags number)
+(defun elmo-archive-folder-append-buffer (folder flags number return-number)
   (let* ((type (elmo-archive-folder-archive-type-internal folder))
 	 (prefix (elmo-archive-folder-archive-prefix-internal folder))
 	 (arc (elmo-archive-get-archive-name folder))
@@ -618,7 +619,9 @@ TYPE specifies the archiver's symbol."
 		 (with-current-buffer src-buffer
 		   (elmo-msgdb-get-message-id-from-buffer))
 		 flags)
-		t))
+		(if return-number
+		    next-num
+		  t)))
 	  nil)))))
 
 (defun elmo-folder-append-messages-*-archive (folder
@@ -1034,7 +1037,7 @@ TYPE specifies the archiver's symbol."
 	  (elmo-global-flags-set flags folder number message-id)
 	  (elmo-msgdb-append-entity new-msgdb entity flags)
 	  (widen)))
-      (forward-line 1)
+      (forward-line)
       (setq rest (cdr rest)))
     new-msgdb))
 
@@ -1059,12 +1062,17 @@ TYPE specifies the archiver's symbol."
 
 (luna-define-method elmo-folder-search ((folder elmo-archive-folder)
 					condition &optional from-msgs)
-  (let* ((case-fold-search nil)
+  (let ((case-fold-search nil)
 ;;;	 (args (elmo-string-to-list key))
 ;;; XXX: I don't know whether `elmo-archive-list-folder' updates match-data.
 ;;;	 (msgs (or from-msgs (elmo-archive-list-folder spec)))
-	 (msgs (or from-msgs (elmo-folder-list-messages folder)))
-	 ret-val)
+	(msgs (cond ((null from-msgs)
+		     (elmo-folder-list-messages folder))
+		    ((listp from-msgs)
+		     from-msgs)
+		    (t
+		     (elmo-folder-list-messages folder 'visible 'in-msgdb))))
+	ret-val)
     (elmo-with-progress-display (elmo-folder-search (length msgs)) "Searching"
       (dolist (number msgs)
 	(when (elmo-archive-field-condition-match

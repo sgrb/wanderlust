@@ -185,13 +185,23 @@ It calls following-method selected from variable
 
 (defun wl-draft-show-attributes-buffer (attribute-values)
   (let* ((cur-win (selected-window))
-	 (size (min
-		(- (window-height cur-win)
-		   window-min-height 1)
-		(- (window-height cur-win)
-		   (max
-		    window-min-height
-		    (1+ wl-draft-preview-attributes-buffer-lines))))))
+	 (size
+	  (min
+	   (- (window-height cur-win)
+	      window-min-height 1)
+	   (- (window-height cur-win)
+	      (max
+	       window-min-height
+	       (cond
+		((null (integerp wl-draft-preview-attributes-buffer-lines))
+		 (1+ (length attribute-values)))
+		((<= 0 wl-draft-preview-attributes-buffer-lines)
+		 (1+ wl-draft-preview-attributes-buffer-lines))
+		(t
+		 ;; wl-draft-preview-attributes-buffer-lines is negative.
+		 (- (length attribute-values)
+		    -1
+		    wl-draft-preview-attributes-buffer-lines))))))))
     (split-window cur-win (if (> size 0) size window-min-height))
     (select-window (next-window))
     (let ((pop-up-windows nil))
@@ -252,6 +262,68 @@ It calls following-method selected from variable
   (or wl-smtp-posting-port
       (progn (require 'smtp) smtp-service)))
 
+(defvar wl-draft-attribute-show-smtp-settings-functions
+  '(wl-draft-send-mail-with-smtp
+    wl-draft-send-mail-with-pop-before-smtp))
+
+(defun wl-draft-attribute-smtp-settings ()
+  (when (memq wl-draft-send-mail-function
+	      wl-draft-attribute-show-smtp-settings-functions)
+    (concat
+     (and wl-smtp-authenticate-type
+	  (format "%s/%s@"
+		  wl-smtp-posting-user
+		  (if (listp wl-smtp-authenticate-type)
+		      (concat "["
+			      (mapconcat
+			       'identity wl-smtp-authenticate-type ", ")
+			      "]")
+		    wl-smtp-authenticate-type)))
+     (format "%s:%s, %s"
+	     (wl-draft-attribute-smtp-posting-server)
+	     (wl-draft-attribute-smtp-posting-port)
+	     (or wl-smtp-connection-type "direct")))))
+
+(defvar wl-draft-attribute-show-pop-before-smtp-settings-functions
+  '(wl-draft-send-mail-with-pop-before-smtp))
+
+(defun wl-draft-attribute-pop-before-smtp-settings ()
+  (when (memq wl-draft-send-mail-function
+	      wl-draft-attribute-show-pop-before-smtp-settings-functions)
+    (format "%s/%s@%s:%s, %s"
+	    (or wl-pop-before-smtp-user
+		elmo-pop3-default-user)
+	    (or wl-pop-before-smtp-authenticate-type
+		elmo-pop3-default-authenticate-type)
+	    (or wl-pop-before-smtp-server
+		elmo-pop3-default-server)
+	    (or wl-pop-before-smtp-port
+		elmo-pop3-default-port)
+	    (or (elmo-get-network-stream-type
+		 (or wl-pop-before-smtp-stream-type
+		     elmo-pop3-default-stream-type))
+		"direct"))))
+
+(defvar wl-draft-attribute-hide-send-mail-method-functions
+  '(wl-draft-send-mail-with-smtp
+    wl-draft-send-mail-with-pop-before-smtp))
+
+(defvar wl-draft-attribute-send-mail-method-table
+'((wl-draft-send-mail-with-qmail . "qmail")
+  (wl-draft-send-mail-with-sendmail . "sendmail")))
+
+(defun wl-draft-attribute-send-mail-method ()
+  (cond
+   ((memq wl-draft-send-mail-function
+	  wl-draft-attribute-hide-send-mail-method-functions)
+    nil)
+   ((assq wl-draft-send-mail-function
+	  wl-draft-attribute-send-mail-method-table)
+    (cdr (assq wl-draft-send-mail-function
+	       wl-draft-attribute-send-mail-method-table)))
+   (t
+    wl-draft-send-mail-function)))
+
 (defun wl-draft-attribute-newsgroups ()
   (std11-field-body "Newsgroups"))
 
@@ -272,6 +344,16 @@ It calls following-method selected from variable
 	    (setq alternatives (cdr alternatives))))
 	value))))
 
+(defun wl-draft-attribute-nntp-posting-function ()
+  (wl-draft-nntp-attribute
+   'function
+   '(wl-nntp-posting-function)))
+
+(defun wl-draft-attribute-nntp-posting-user ()
+  (wl-draft-nntp-attribute
+   'user
+   '(wl-nntp-posting-user elmo-nntp-default-user)))
+
 (defun wl-draft-attribute-nntp-posting-server ()
   (wl-draft-nntp-attribute
    'server
@@ -281,6 +363,43 @@ It calls following-method selected from variable
   (wl-draft-nntp-attribute
    'port
    '(wl-nntp-posting-port elmo-nntp-default-port)))
+
+(defun wl-draft-attribute-nntp-posting-stream-type ()
+  (wl-draft-nntp-attribute
+   'stream-type
+   '(wl-nntp-posting-stream-type elmo-nntp-default-stream-type)))
+
+(defvar wl-draft-attribute-show-nntp-settings-functions
+  '(elmo-nntp-post))
+
+(defvar wl-draft-attribute-nntp-method-table nil)
+
+(defun wl-draft-attribute-nntp-method ()
+  (let ((method (wl-draft-attribute-nntp-posting-function)))
+    (cond
+     ((memq method wl-draft-attribute-show-nntp-settings-functions)
+      nil)
+     ((assq method wl-draft-attribute-nntp-method-table)
+      (cdr (assq method wl-draft-attribute-nntp-method-table)))
+     (t
+      method))))
+
+(defun wl-draft-attribute-nntp-settings ()
+  (when (memq (wl-draft-attribute-nntp-posting-function)
+	      wl-draft-attribute-show-nntp-settings-functions)
+    (let ((user (wl-draft-attribute-nntp-posting-user)))
+      (concat
+       (and user
+	    (concat user "@"))
+       (format "%s:%s, %s"
+	       (wl-draft-attribute-nntp-posting-server)
+	       (wl-draft-attribute-nntp-posting-port)
+	       (or (wl-draft-attribute-nntp-posting-stream-type) "direct"))))))
+
+(defun wl-draft-attribute-pgp-processings ()
+  (when (and (null wl-draft-preview-process-pgp)
+	     wl-draft-preview-pgp-processing)
+    (mapconcat #'symbol-name wl-draft-preview-pgp-processing ", ")))
 
 (defun wl-draft-attribute-value (attr)
   (let ((name (symbol-name attr))
@@ -308,6 +427,10 @@ It calls following-method selected from variable
     (select-window window)
     (switch-to-buffer buf)))
 
+(defvar wl-draft-preview-pgp-processing nil)
+
+(make-variable-buffer-local 'wl-draft-preview-pgp-processing)
+
 (defun wl-draft-preview-message ()
   "Preview editing message."
   (interactive)
@@ -324,6 +447,8 @@ It calls following-method selected from variable
 	   (if (boundp 'mime-header-encode-method-alist)
 	       (symbol-value 'mime-header-encode-method-alist))))
 	 mime-view-ignored-field-list	; all header.
+	 wl-draft-preview-pgp-processing
+	 (mime-edit-pgp-processing mime-edit-pgp-processing)
 	 (mime-edit-translate-buffer-hook
 	  (cons
 	   (lambda ()
@@ -338,14 +463,19 @@ It calls following-method selected from variable
 			  (wl-draft-clone-local-variables))))
 	       (goto-char current-point)
 	       (run-hooks 'wl-draft-send-hook)
+	       (unless wl-draft-preview-process-pgp
+		 (setq wl-draft-preview-pgp-processing mime-edit-pgp-processing
+		       mime-edit-pgp-processing nil))
 	       (condition-case err
 		   (setq attribute-values
-			 (mapcar
-			  (lambda (attr)
-			    (cons attr (wl-draft-attribute-value attr)))
-			  (if wl-draft-preview-attributes
-			      (wl-draft-preview-attributes-list)
-			    '(recipients))))
+			 (delq nil
+			       (mapcar
+				(lambda (attr)
+				  (let ((value (wl-draft-attribute-value attr)))
+				    (and value (cons attr value))))
+				(if wl-draft-preview-attributes
+				    (wl-draft-preview-attributes-list)
+				  '(recipients)))))
 		 (error
 		  (kill-buffer (current-buffer))
 		  (signal (car err) (cdr err))))))
@@ -489,22 +619,18 @@ It calls following-method selected from variable
 
 (eval-when-compile
   ;; split eval-when-compile form for avoid error on `make compile-strict'
-  (condition-case nil
-      (require 'epa)
-    (error
-     (wl-define-dummy-functions epg-make-context
-				epg-decrypt-string
-				epg-verify-string
-				epg-context-set-progress-callback
-				epg-context-result-for
-				epg-verify-result-to-string
-				epa-display-info)))
-  (condition-case nil
-      (require 'pgg)
-    (error
-     (wl-define-dummy-functions pgg-decrypt-region
-				pgg-verify-region
-				pgg-display-output-buffer))))
+  (unless (require 'epa nil t)
+    (wl-define-dummy-functions epg-make-context
+			       epg-decrypt-string
+			       epg-verify-string
+			       epg-context-set-progress-callback
+			       epg-context-result-for
+			       epg-verify-result-to-string
+			       epa-display-info))
+  (unless (require 'pgg nil t)
+    (wl-define-dummy-functions pgg-decrypt-region
+			       pgg-verify-region
+			       pgg-display-output-buffer)))
 
 (defun wl-epg-progress-callback (context what char current total reporter)
   (let ((label (elmo-progress-counter-label reporter)))
@@ -530,7 +656,8 @@ It calls following-method selected from variable
 
 (defun wl-mime-pgp-verify-region-with-epg (beg end &optional coding-system)
   (require 'epa)
-  (let ((context (epg-make-context)))
+  (let ((context (epg-make-context))
+	window)
     (elmo-with-progress-display (epg-verify nil reporter)
 	"Verifying"
       (epg-context-set-progress-callback context
@@ -545,7 +672,10 @@ It calls following-method selected from variable
 	  'raw-text-dos))))
     (when (epg-context-result-for context 'verify)
       (epa-display-info (epg-verify-result-to-string
-			 (epg-context-result-for context 'verify))))))
+			 (epg-context-result-for context 'verify)))
+      (when (and epa-popup-info-window
+		 (setq window (get-buffer-window epa-info-buffer)))
+	(select-window window)))))
 
 (defun wl-mime-pgp-decrypt-region-with-pgg (beg end &optional no-decode)
   (require 'pgg)
@@ -656,32 +786,39 @@ With ARG, ask coding system and encode the region with it before verifying."
 (defun wl-mime-preview-application/pgp (parent-entity entity situation)
   (goto-char (point-max))
   (let ((p (point))
-	representation-type child-entity buffer)
+	representation-type child-entity buffer failed)
     (goto-char p)
     (save-restriction
       (narrow-to-region p p)
       (setq buffer (generate-new-buffer
 		    (concat wl-original-message-buffer-name "PGP*")))
-      (add-hook 'kill-buffer-hook 'wl-mime-pgp-kill-decrypted-buffers nil t)
-      (make-local-variable 'wl-mime-pgp-decrypted-buffers)
-      (add-to-list 'wl-mime-pgp-decrypted-buffers buffer)
       (with-current-buffer buffer
 	(mime-insert-entity entity)
 	(when (progn
 		(goto-char (point-min))
 		(re-search-forward "^-+BEGIN PGP MESSAGE-+$" nil t))
-	  (wl-mime-pgp-decrypt-region (point-min) (point-max) 'no-decode)
+	  (condition-case error
+	      (wl-mime-pgp-decrypt-region (point-min) (point-max) 'no-decode)
+	    (error (setq failed error)))
 	  (setq representation-type 'elmo-buffer))
-	(setq child-entity (mime-parse-message
-			    (mm-expand-class-name representation-type)
-			    nil
-			    parent-entity
-			    (mime-entity-node-id-internal parent-entity))
-	      buffer-read-only t))
-      (mime-display-entity
-       child-entity nil `((header . visible)
-			  (body . visible)
-			  (entity-button . invisible))))))
+	(unless failed
+	  (setq child-entity (mime-parse-message
+			      (mm-expand-class-name representation-type)
+			      nil
+			      parent-entity
+			      (mime-entity-node-id-internal parent-entity))
+		buffer-read-only t)))
+      (if failed
+	  (progn
+	    (insert (format "%s" (cdr failed)))
+	    (kill-buffer buffer))
+	(add-hook 'kill-buffer-hook 'wl-mime-pgp-kill-decrypted-buffers nil t)
+	(make-local-variable 'wl-mime-pgp-decrypted-buffers)
+	(add-to-list 'wl-mime-pgp-decrypted-buffers buffer)
+	(mime-display-entity
+	 child-entity nil `((header . visible)
+			    (body . visible)
+			    (entity-button . invisible)))))))
 
 (defun wl-mime-preview-application/pgp-encrypted (entity situation)
   (let* ((entity-node-id (mime-entity-node-id entity))

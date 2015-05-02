@@ -1,3 +1,446 @@
+2014-11-29  David Maus  <dmaus@ictsoc.de>
+
+	* elmo-imap4.el (elmo-imap4-search-generate-vector): Provide
+	correct search key for header searches.
+
+2014-11-20  Kazuhiro Ito  <kzhr@d1.dion.ne.jp>
+
+	* elmo-util.el (elmo-string): Fix typo.
+
+2014-11-15  Kazuhiro Ito  <kzhr@d1.dion.ne.jp>
+
+	* elmo-nntp.el (elmo-nntp-read-response): Use elmo-delete-cr.
+	(elmo-nntp-groups-read-response): Use elmo-delete-cr-buffer.
+
+	* elmo-pop3.el (elmo-pop3-read-response): Use elmo-delete-cr.
+
+2014-11-15  Kazuhiro Ito  <kzhr@d1.dion.ne.jp>
+
+	* elmo-nntp.el (elmo-nntp-next-result-arrived-p): Simplified.
+
+2014-11-15  Kazuhiro Ito  <kzhr@d1.dion.ne.jp>
+
+	Remove '1' argument for forward-char, backward-char and
+	forward-line.  Use following-char and preceding-char preferredly.
+
+	* acap.el (acap-parse-greeting, acap-parse-string)
+	(acap-parse-quoted, acap-parse-value-list)
+	(acap-parse-value-or-return-metalist)
+	(acap-parse-return-metalist, acap-parse-return-attr-list):
+	Likewise.
+
+	* elmo-archive.el (elmo-archive-list-folder-subr)
+	(elmo-archive-parse-mmdf): Likewise.
+
+	* elmo-imap4.el (elmo-imap4-forward, elmo-imap4-parse-string)
+	(elmo-imap4-parse-address, elmo-imap4-parse-address-list)
+	(elmo-imap4-parse-response, elmo-imap4-parse-bye)
+	(elmo-imap4-parse-resp-text-code, elmo-imap4-parse-header-list)
+	(elmo-imap4-parse-fetch-body-section, elmo-imap4-parse-fetch)
+	(elmo-imap4-parse-status, elmo-imap4-parse-acl)
+	(elmo-imap4-parse-envelope, elmo-imap4-parse-string-list)
+	(elmo-imap4-parse-body-extension, elmo-imap4-parse-body-ext)
+	(elmo-imap4-parse-body): Likewise.
+
+	* elmo-nntp.el (elmo-nntp-folder-list-subfolders)
+	(elmo-nntp-parse-xhdr-response, elmo-nntp-get-folders-info)
+	(elmo-nntp-msgdb-create-message): Likewise.
+
+	* elmo-pop3.el (elmo-pop3-msgdb-create-message): Likewise.
+
+	* elmo-search.el (elmo-search-parse-filename-list): Likewise.
+
+	* elmo-util.el (elmo-msgdb-insert-file-header)
+	(elmo-parse-addresses): Likewise.
+
+	* pldap.el (ldap-search-basic): Likewise.
+
+	* slp.el (slp-parse-srvs, slp-parse-srvtypes): Likewise.
+
+2014-11-15  Kazuhiro Ito  <kzhr@d1.dion.ne.jp>
+
+	* elmo-archive.el (elmo-archive-list-folder-subr): Remove
+	redundant code.
+
+	* elmo-dop.el (elmo-folder-next-message-number-dop): Likewise.
+
+	* elmo-localdir.el (elmo-localdir-list-subr): Likewise.
+
+	* elmo.el (elmo-folder-next-message-number)
+	(elmo-strict-folder-diff): Likewise.
+
+2014-11-08  Kazuhiro Ito  <kzhr@d1.dion.ne.jp>
+
+	* elmo-pop3.el (elmo-pop3-auth-apop, elmo-folder-status): Fix typo
+	of regexp.
+
+2014-11-08  Kazuhiro Ito  <kzhr@d1.dion.ne.jp>
+
+	* elmo.el (elmo-folder-search): Accept NUMBERS argument is set to
+	t, that indicates to select messages for interactive folder
+	search.  Default method selects visible messages from msgdb.
+
+	* elmo-archive.el (elmo-folder-search): Handle the case that
+	NUMBERS is t (select visible messages from msgdb).
+
+	* elmo-filter.el (elmo-folder-search): Likewise (select visible
+	messages from msgdb).
+
+	* elmo-imap4.el (elmo-imap4-search-internal): Likewise (treated as
+	nil).
+
+	* elmo-multi.el (elmo-folder-search): Likewise (passed through to
+	child folders).
+
+	* elmo-nntp.el (elmo-nntp-retrieve-field): Likewise (select
+	visible messages from msgdb).  Do not filter result.
+	(elmo-nntp-search-primitive): Filter result by FROM-MSGS.
+
+2014-11-08  Kazuhiro Ito  <kzhr@d1.dion.ne.jp>
+
+	* elmo-nntp.el (elmo-nntp-read-response): Refined. Improve
+	performance.
+
+	* elmo-pop3.el (elmo-pop3-read-response): Ditto.
+
+2014-11-06  Kazuhiro Ito  <kzhr@d1.dion.ne.jp>
+
+	* elmo-imap4.el (elmo-imap4-elist): Fix typo.
+
+	* elmo-split.el (elmo-split-subr): Fix typo.
+
+2014-11-05  Kazuhiro Ito  <kzhr@d1.dion.ne.jp>
+
+	* elmo-imap4.el (elmo-imap4-search-generate-vector): Remove unused
+	let-binding.  Use elmo-list-diff instead of elmo-list-difference.
+
+	* elmo-nntp.el (elmo-nntp-search-primitive): Use elmo-list-diff
+	for "first" search.
+
+	* elmo-util.el (elmo-list-difference): Removed.  Not used anymore.
+
+2014-11-05  Kazuhiro Ito  <kzhr@d1.dion.ne.jp>
+
+	* elmo-multi.el (elmo-folder-search): Rewritten.  Avoid redundant
+	use of elmo-folder-list-messages.
+
+2014-11-05  Erik Hetzner <egh@e6h.org>
+
+	* elmo.el (elmo-folder-synchronize): Avoid redundant use of
+	elmo-folder-list-messages.
+	Cf https://github.com/wanderlust/wanderlust/pull/79
+
+2014-10-19  David Maus  <dmaus@ictsoc.de>
+
+	* elmo-imap4.el (elmo-imap4-search-keys): New variable. Known IMAP
+	search keys.
+	(elmo-imap4-search-generate-vector): Use new variable instead of
+	local list.
+
+2014-10-18  David Maus  <dmaus@ictsoc.de>
+
+	* elmo-imap4.el (elmo-imap4-strict-flag-availability-check): New
+	variable. Perform a strict check for flag availability in set to a
+	non-nil value.
+	(elmo-imap4-session-flag-available-p): Use new variable and
+	conditionally perform a strict check for a flag's availability.
+
+2014-10-15 Erik Hetzner <egh@e6h.org>
+
+	* elmo-search.el: Add support for mu, notmuch search.
+
+2014-09-06  Kazuhiro Ito  <kzhr@d1.dion.ne.jp>
+
+	* elmo-localdir.el (elmo-folder-pack-numbers): Use `/=' instead of
+	not+eq for number comparison.
+
+	* elmo-nntp.el (elmo-nntp-parse-overview-string): Likewise.
+
+	* elmo-util.el (elmo-msgdb-insert-file-header): Likewise.
+
+	* elmo.el (elmo-folder-synchronize): Likewise.
+
+2014-08-15  Kazuhiro Ito  <kzhr@d1.dion.ne.jp>
+
+	* elmo-nntp.el (elmo-nntp-parse-overview-string): Do not use
+	temporary buffer.  Improve performance.
+
+2014-07-12  Kazuhiro Ito  <kzhr@d1.dion.ne.jp>
+
+	* elmo-util.el (elmo-string): Assume first argument STRING is
+	string.
+
+2014-07-09  Kazuhiro Ito  <kzhr@d1.dion.ne.jp>
+
+	* elmo-util.el (elmo-string): Optional arguments FROM and TO are
+	available.  Use substring-no-properties if available.
+
+	* elmo.el (elmo-make-folder): Use elmo-string with optional
+	arguments.
+
+2014-07-07  Juliusz Chroboczek  <jch@pps.univ-paris-diderot.fr>
+
+	* elmo-pipe.el (elmo-folder-initialize): Protect against
+	overwriting match data.
+
+2014-06-11  Kazuhiro Ito  <kzhr@d1.dion.ne.jp>
+
+	* elmo-date.el (elmo-time-less-p): Use car-less-than-car.
+
+	* elmo-mime.el (elmo-message-reassembled-mime-entity): Likewise.
+
+	* elmo-util.el (elmo-list-diff): Likewise.
+
+2014-06-03  Juliusz Chroboczek  <jch@pps.univ-paris-diderot.fr>
+
+	* elmo-imap4.el (elmo-imap4-parse-resp-text-code): Fix parsing of
+	IMAP ALERT replies.
+
+2014-06-01  David Maus  <dmaus@ictsoc.de>
+
+	* elmo-maildir.el (elmo-map-message-fetch): Signal error if
+	maildir message file is not found.
+
+2014-05-30  Kazuhiro Ito  <kzhr@d1.dion.ne.jp>
+
+	Fix for https://github.com/wanderlust/wanderlust/issues/59
+
+	* elmo-imap4.el (elmo-imap4-search-generate-vector): Call
+	elmo-imap4-flag-to-imap-criteria instead of
+	elmo-imap4-flag-to-imap-search-key.
+
+	* elmo-nntp.el (elmo-nntp-use-server-search-p): Return nil for
+	flag search.
+
+2014-05-30  Kazuhiro Ito  <kzhr@d1.dion.ne.jp>
+
+	* elmo-msgdb.el (elmo-msgdb-get-parent-entity): Add the comment
+	for old msgdb.
+
+	* elmo-multi.el (elmo-message-entity-parent): Likewise.
+
+	* elmo-shimbun.el (elmo-message-entity-parent): Likewise.
+
+2014-05-24  Kazuhiro Ito  <kzhr@d1.dion.ne.jp>
+
+	* elmo-msgdb.el (elmo-message-entity-field): Revert the last change.
+	(elmo-msgdb-get-parent-entity): Check type of references field's
+	value.
+	(elmo-msgdb-overview-entity-get-references): Revert the last change.
+
+	* elmo-multi.el (elmo-message-entity-parent): Check type of
+	references field's value.
+
+	* elmo-shimbun.el (elmo-message-entity-parent): Likewise.
+
+2014-05-23  Kazuhiro Ito  <kzhr@d1.dion.ne.jp>
+
+	* elmo-pop3.el (elmo-pop3-read-body): Fix trying to access buffer
+	local variable from another buffer.
+	Cf. https://github.com/wanderlust/wanderlust/commit/f1b56519a392a6087f5209afae52fb3324e65490#commitcomment-6424927
+
+2014-05-23  Kazuhiro Ito  <kzhr@d1.dion.ne.jp>
+
+	* elmo-imap4.el (elmo-imap4-setup-send-buffer): Fix typo.  Bind
+	inhibit-eol-conversion to nil before code conversion.
+	Cf. https://github.com/wanderlust/wanderlust/commit/88b9596f95b106dc04aba77e890a97252e32b516#commitcomment-6425013
+
+2014-05-20  David Maus  <dmaus@ictsoc.de>
+
+	* elmo-imap4.el (elmo-folder-append-buffer): Fix even more
+	trailing and leading whitespace.
+
+2014-05-20  David Maus  <dmaus@ictsoc.de>
+
+	* elmo-imap4.el (elmo-folder-append-buffer): Remove trailing space
+	from command particle.
+
+2014-05-19  David Maus  <dmaus@ictsoc.de>
+
+	* elmo-imap4.el (elmo-imap4-send-command): Don't use
+	string-empty-p to check for empty string.
+
+2014-05-18  David Maus  <dmaus@ictsoc.de>
+
+	* elmo-imap4.el (elmo-imap4-search-build-full-command): Simplified.
+	(elmo-imap4-search-generate-vector)
+	(elmo-imap4-search-generate-and, elmo-imap4-search-generate-or):
+	Remove trailing spaces.
+
+2014-05-18  David Maus  <dmaus@x60s.major-mode.org>
+
+	* elmo-imap4.el (elmo-create-folder-plugged): Remove leading and
+	trainling space from IMAP command particle.
+	(elmo-imap4-session-select-mailbox)
+	(elmo-imap4-session-unselect-mailbox, elmo-imap4-clear-login)
+	(elmo-imap4-server-diff-async, elmo-imap4-folder-status-plugged)
+	(elmo-folder-list-subfolders, elmo-folder-delete)
+	(elmo-folder-rename-internal, elmo-imap4-copy-messages)
+	(elmo-folder-delete-messages-plugged)
+	(elmo-imap4-folder-diff-plugged, elmo-folder-open)
+	(elmo-folder-create-plugged, elmo-folder-append-buffer)
+	(elmo-folder-next-message-number-plugged)
+	(elmo-message-fetch-field): Dto.
+	(elmo-imap4-send-command): Use a list to build final command
+	string.
+
+2014-05-18  David Maus  <dmaus@ictsoc.de>
+
+	* elmo-imap4.el (elmo-imap4-session-process-send-string): New
+	function. Send string to session process, facoted out from
+	`elmo-imap4-send-string`.
+	(elmo-imap4-send-string): Use factord out function.
+	(elmo-imap4-send-command): Use new function to send to process.
+
+2014-05-18  David Maus  <dmaus@ictsoc.de>
+
+	* elmo-imap4.el (with-elmo-imap4-session-process-buffer): New
+	macro. Execute BODY in a sessions' process buffer.
+	(elmo-imap4-command-tag): Use new macro.
+	(elmo-imap4-session-wait-response-maybe): New function. Wait for
+	server response when in parsing state.
+	(elmo-imap4-send-command): Use new function.
+
+2014-05-18  David Maus  <dmaus@ictsoc.de>
+
+	* elmo-imap4.el (elmo-imap4-command-tag): New function. Return IMAP command tag.
+	(elmo-imap4-send-command): Use new function to obtain command tag.
+
+2014-05-18  David Maus  <dmaus@ictsoc.de>
+
+	* elmo-imap4.el (elmo-imap4-send-command): Refactor sending of literals, add logging.
+
+2014-05-18  Kazuhiro Ito  <kzhr@d1.dion.ne.jp>
+
+	* elmo-util.el (elmo-list-diff): Simplified.  Sort each element of
+	return value.
+
+	* elmo.el (elmo-folder-synchronize): Do not sort elmo-list-diff's result.
+
+2014-05-17  Kazuhiro Ito  <kzhr@d1.dion.ne.jp>
+
+	Keep multiple parent Message-IDs in msgdb.  Msgdb structure has
+	slightly changed.  Older wl can load new msgdb without any error,
+	but will fail to search parent message.  New wl can load old msgdb
+	but new feature is available only for newly added messages.
+
+	* elmo-msgdb.el (elmo-message-entity-field): Return list of
+	Message-IDs for reference field.
+	(elmo-msgdb-get-parent-entity): Assume references field's value is
+	list.
+	(elmo-msgdb-overview-entity-get-references): Return list of
+	Message-IDs.
+
+	* elmo-multi.el (elmo-message-entity-parent): Assume references
+	field's value is list.
+
+	* elmo-nntp.el (elmo-nntp-create-msgdb-from-overview-string): Make
+	references field as list of Message-IDs.
+
+	* elmo-shimbun.el (elmo-message-entity-parent): Assume references
+	field's value is list.
+
+	* elmo-util.el (elmo-msgdb-get-message-ids-from-header): New function.
+	(elmo-msgdb-get-references-from-header): Use it.  Return list of
+	Message-IDs.
+
+2014-05-17  Kazuhiro Ito  <kzhr@d1.dion.ne.jp>
+
+	Improve performance of uniquifying large list of sortable numbers.
+
+	* elmo-util.el (elmo-sort-uniq-number-list): New function.
+	(elmo-union): Use it.
+
+	* elmo-filter.el (elmo-folder-list-messages): Likewise.
+
+	* elmo-imap4.el (elmo-folder-merge-flagged): Likewise.
+
+	* elmo-nntp.el (elmo-nntp-search-internal): Likewise.
+
+	* elmo.el (elmo-folder-list-messages, elmo-folder-merge-flagged):
+	Likewise.
+
+	* modb-standard.el (modb-standard-cleanup-stale-entities):
+	Likewise.
+
+2014-05-16  Kazuhiro Ito  <kzhr@d1.dion.ne.jp>
+
+	* elmo-util.el (elmo-max-of-list): Fix the last change for the
+	case argument is nil.
+
+2014-05-16  Kazuhiro Ito  <kzhr@d1.dion.ne.jp>
+
+	* elmo-util.el (elmo-max-of-list, elmo-cache-get-path-subr)
+	(elmo-warning): Explicit function's symbols.
+
+2014-05-16  Kazuhiro Ito  <kzhr@d1.dion.ne.jp>
+
+	* elmo-util.el (elmo-max-of-list): Refactored.
+
+2014-05-05  Kazuhiro Ito  <kzhr@d1.dion.ne.jp>
+
+	* elmo-util.el (elmo-with-enable-multibyte): Fix the last change.
+	Check result was interpreted reversely.  Reported by Juliusz
+	Chroboczek.
+
+2014-04-28  Kazuhiro Ito  <kzhr@d1.dion.ne.jp>
+
+	* elmo-pop3.el (elmo-pop3-read-contents): Do not bind
+	case-fold-search.  search-forward with minimal query.
+
+2014-04-28  Kazuhiro Ito  <kzhr@d1.dion.ne.jp>
+
+	* elmo-nntp.el (elmo-nntp-read-response, elmo-nntp-read-contents)
+	(elmo-nntp-read-body): Improve performance.
+	Cf. https://github.com/wanderlust/wanderlust/commit/cf49dc988b79e2bb219fd45548e4511d7b815a9b
+
+	* elmo-pop3.el (elmo-pop3-read-response, elmo-pop3-read-body):
+	Likewise.
+
+2014-03-31  Kazuhiro Ito  <kzhr@d1.dion.ne.jp>
+
+	* elmo-util.el (elmo-delete-cr-region, elmo-delete-cr): Bind
+	inhibit-eol-conversion to nil.
+	Cf. https://bugs.debian.org/cgi-bin/bugreport.cgi?bug=742206
+
+2014-02-22  Kazuhiro Ito  <kzhr@d1.dion.ne.jp>
+
+	* elmo-imap4.el (elmo-imap4-setup-send-buffer): Accept third
+	argument FILE.  Refactored.
+	(elmo-imap4-setup-send-buffer-from-file): Use it.
+
+2014-02-21  Kazuhiro Ito  <kzhr@d1.dion.ne.jp>
+
+	* elmo-util.el (elmo-delete-cr-region)
+	(elmo-delete-cr-get-content-type, elmo-delete-cr)
+	(elmo-delete-cr-region): Refactored.
+
+2014-02-08  Kazuhiro Ito  <kzhr@d1.dion.ne.jp> (not tested)
+
+	* elmo-imap4.el (elmo-imap4-read-token): New inline function.
+	(elmo-imap4-parse-response, elmo-imap4-parse-fetch): Use it.
+	(elmo-imap4-parse-nil, elmo-imap4-parse-greeting)
+	(elmo-imap4-parse-resp-text-code, elmo-imap4-parse-data-list):
+	Match string case-insensitively.
+
+2014-01-19  Kazuhiro Ito  <kzhr@d1.dion.ne.jp>
+
+	* elmo-util.el (elmo-parse-token): Optional argument ASIS is
+	added.
+
+	* elmo-multi.el (elmo-folder-initialize): Call elmo-parse-token
+	with ASIS option.
+
+2014-01-13  Kazuhiro Ito  <kzhr@d1.dion.ne.jp>
+
+	* elmo-vars.el (elmo-have-link-count): Set default to nil on
+	Cygwin.
+
+2013-06-30  David Maus  <dmaus@ictsoc.de>
+
+	* elmo-imap4.el (elmo-imap4-search-generate-vector): Remove
+	repeated calls to `elmo-filter-key', use `search-key' variable.
+
 2013-06-19  Kazuhiro Ito  <kzhr@d1.dion.ne.jp>
 
 	* elmo-vars.el: Explicitly specify file coding.
@@ -277,6 +720,39 @@
 	* modb-entity.el (elmo-msgdb-create-message-entity-from-buffer):
 	Likewise.
 
+2011-11-30  David Maus  <dmaus@ictsoc.de>
+
+	* elmo-maildir.el (elmo-folder-append-buffer): Correctly get the
+	number of the appended message.
+
+2011-07-17  David Maus  <dmaus@ictsoc.de>
+
+	* elmo-util.el (elmo-list-difference): New function. Return
+	difference of two lists.
+	* elmo-imap4.el (elmo-imap4-search-generate-vector): Use function.
+
+2011-07-03  Erik Hetzner  <egh@e6h.org>
+
+	* elmo-imap4.el (elmo-imap4-search-internal-primitive): Removed.
+	(elmo-imap4-search-build-full-command): New function. Build full
+	IMAP search command.
+	(elmo-imap4-search-perform): New function. Perform IMAP search.
+	(elmo-imap4-search-generate-vector): New function. Generate search
+	vector.
+	(elmo-imap4-search-mergeable-p): New function. Return non-nil if
+	two search conditions are mergeable.
+	(elmo-imap4-search-mergeable-charset): New function. Return
+	charset of two searches for merging.
+	(elmo-imap4-search-generate-uid): New function. Return search for
+	a set of messages.
+	(elmo-imap4-search-generate-and): New function. Return search that
+	returns intersection of two search commands.
+	(elmo-imap4-search-generate-or): New function. Return search that
+	returns union of two search commands.
+	(elmo-imap4-search-generate): New function. Return search in
+	folder.
+	(elmo-imap4-search-internal): Use new search functions.
+
 2012-05-15  Kazuhiro Ito  <kzhr@d1.dion.ne.jp>
 
 	* modb-entity.el (elmo-msgdb-create-message-entity-from-file):
@@ -325,18 +801,6 @@
 
 2012-04-07  Kazuhiro Ito  <kzhr@d1.dion.ne.jp>
 
-	* elmo-net.el (elmo-open-tls-stream): Removed.
-
-	* elmo-vars.el (elmo-network-stream-type-alist): Use
-	open-tls-stream instead of elmo-open-tls-stream.
-
-2012-04-07  Kazuhiro Ito  <kzhr@d1.dion.ne.jp>
-
-	* elmo-net.el (elmo-open-network-stream): Raise error when open
-	connection function failed.
-
-2012-04-07  Kazuhiro Ito  <kzhr@d1.dion.ne.jp>
-
 	* elmo-net.el (elmo-network-stream-type-from-symbol): Removed.
 	elmo-get-network-stream-type has slipped out of my check, which
 	had the same functionality.
@@ -357,12 +821,38 @@
 	* elmo-imap4.el (elmo-imap4-fetch-callback-1-subr): Don't mark
 	unread messages with important or answered flag read.
 
+2011-06-02  David Maus  <dmaus@ictsoc.de>
+
+	* elmo-date.el (elmo-time-make-imap-date-string): New
+	function. Return IMAP4 compliant date string.
+
+	* elmo-imap4.el (elmo-folder-append-buffer): Return uid of append
+	message if requested.
+
 2011-05-29  David Maus  <dmaus@ictsoc.de>
 
 	* elmo-imap4.el (elmo-network-authenticate-session): Always ask
 	for capabilities after login.
 	(elmo-imap4-parse-response): Remove superfluous third argument to
 	split-string.
+
+2011-05-29  David Maus  <dmaus@ictsoc.de>
+
+	* elmo-maildir.el (elmo-folder-append-buffer): Return number of
+	appended message.
+	* elmo-localdir.el (elmo-folder-append-buffer): Dto.
+	* elmo-archive.el (elmo-archive-folder-append-buffer): Dto.
+
+	* elmo.el (elmo-folder-append-buffer): Add optional fourth
+	argument, return number of appended message if possible.
+	* elmo-pipe.el (elmo-folder-append-buffer): Dto.
+	* elmo-maildir.el (elmo-folder-append-buffer): Dto.
+	* elmo-flag.el (elmo-folder-append-buffer): Dto.
+	* elmo-localdir.el (elmo-folder-append-buffer): Dto.
+	* elmo-filter.el (elmo-folder-append-buffer): Dto.
+	* elmo-cache.el (elmo-folder-append-buffer): Dto.
+	* elmo-archive.el (elmo-folder-append-buffer)
+	(elmo-archive-folder-append-buffer): Dto.
 
 2011-05-24  Kazuhiro Ito  <kzhr@d1.dion.ne.jp>
 
@@ -421,6 +911,11 @@
 	(elmo-folder-open-internal): Open child folders only if they are
 	not opened yet.
 
+2010-08-31  David Maus  <dmaus@ictsoc.de>
+
+	* elmo-imap4.el (elmo-folder-delete-messages-plugged): Use smarter
+	mechanism to expunge messages.
+
 2010-08-31  TAKAHASHI Kaoru  <kaoru@kaisei.org>
 
 	* elmo-imap4.el: Remove trailing whitespace.
@@ -467,10 +962,82 @@
 	* elmo-map.el (elmo-folder-open-internal-p): Dto.
 	* elmo-filter.el (elmo-folder-open-internal-p): Dto.
 
+2010-08-04  David Maus  <dmaus@ictsoc.de>
+
+	* elmo-imap4.el (elmo-imap4-session-deselect-mailbox): New
+	function.  Leave selected state without causing silent EXPUNGE.
+	(elmo-imap4-folder-status-plugged, elmo-folder-rename-internal):
+	Use function.
+
 2010-08-01  David Maus  <dmaus@ictsoc.de>
 
 	* elmo.el (elmo-folder-move-messages): Open source folder before
 	moving messages.
+
+2010-07-18  David Maus  <dmaus@ictsoc.de>
+
+	* elmo-imap4.el (elmo-imap4-mailbox-size-update-maybe): Ignore
+	EXPUNGE responses.
+	(elmo-imap4-mailbox-size-update-maybe): Use latest EXIST or RECENT
+	response value.
+
+2010-07-02  David Maus  <dmaus@ictsoc.de>
+
+	* elmo-imap4.el (elmo-server-diff-async): Remove.  Unused luna
+	method.
+	(elmo-imap4-folder-status-plugged): Close mailbox before calling
+	STATUS if it is selected.  If
+	`elmo-imap4-use-select-to-update-status' is non-nil, do the
+	opposite.
+	(elmo-imap4-folder-status-plugged): Remove usage of kill file to
+	adjust message counter.
+	(elmo-folder-next-message-number-plugged): Close mailbox before
+	calling STATUS if selected.  If
+	`elmo-imap4-use-select-to-update-status' is non-nil, do the
+	opposite.
+
+2010-05-18  David Maus  <dmaus@ictsoc.de>
+
+	* elmo-imap4.el (elmo-imap4-mailbox-selected-p): Fix typo.
+
+2010-05-08  David Maus  <dmaus@ictsoc.de>
+
+	* elmo-imap4.el (elmo-imap4-mailbox-selected-p): New macro.
+	Return non-nil if mailbox is selected in session.
+	(elmo-imap4-session-select-mailbox): Use macro
+	`elmo-imap4-mailbox-selected-p'.
+	(elmo-folder-exists-p-plugged): Dto.
+	(elmo-folder-check-plugged): Dto.
+	(elmo-imap4-folder-diff-plugged): Dto.
+
+2010-05-05  David Maus  <dmaus@ictsoc.de>
+
+	* elmo-imap4.el (elmo-imap4-mailbox-size-update-maybe): Use
+	simpler method to count expunged messages.
+	(elmo-imap4-folder-diff-plugged): Use NOOP and SEARCH when called
+	for selected mailbox.
+
+2010-04-17  David Maus  <dmaus@ictsoc.de>
+
+	* elmo-imap4.el (elmo-imap4-mailbox-size-update-maybe): Build list
+	of expunged messages only when response contains expunge.
+	(elmo-imap4-folder-diff-plugged): Removed usage of kill file to
+	adjust message counter.
+	(elmo-imap4-folder-diff-plugged): When mailbox is selected, search
+	for unread messages, call noop to maybe update mailbox size and
+	return recorded size of mailbox.
+
+2010-04-16  David Maus  <dmaus@ictsoc.de>
+
+	* elmo-imap4.el (luna-define-class): Add slot
+	`current-mailbox-size'.
+	(elmo-imap4-mailbox-size-update-maybe): New function.
+	(elmo-imap4-read-response): Update mailbox size when untagged
+	EXISTS, RECENT and EXPUNGE responses arrive.
+	(elmo-imap4-session-check, elmo-folder-delete-messages-plugged):
+	Wait for and evaluate server response.
+	(elmo-imap4-session-select-mailbox, elmo-folder-delete)
+	(elmo-folder-open): Reset mailbox size when no mailbox selected.
 
 2010-04-15  David Maus  <dmaus@ictsoc.de>
 

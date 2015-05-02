@@ -215,53 +215,35 @@ CODE is one of the following:
 'in-use      ... authentication was successful but the mailbox is in use."
   ;; buffer is in case for process is dead.
   (with-current-buffer (process-buffer process)
-    (let ((case-fold-search nil)
-	  (response-string nil)
+    (let (case-fold-search
 	  (response-continue t)
-	  (return-value nil)
-	  (err nil)
-	  match-end)
+	  err match-end
+	  (start elmo-pop3-read-point))
       (while response-continue
-	(goto-char elmo-pop3-read-point)
-	(while (not (re-search-forward "\r?\n" nil t))
-	  (accept-process-output process 1)
-	  (goto-char elmo-pop3-read-point))
+	(setq match-end elmo-pop3-read-point)
+	(while (null (progn (goto-char match-end)
+			    (search-forward "\r\n" nil t)))
+	  (setq match-end (max (1- (point-max)) elmo-pop3-read-point))
+	  (accept-process-output process 1))
 	(setq match-end (point))
-	(setq response-string
-	      (buffer-substring elmo-pop3-read-point
-				(max (- match-end 2) elmo-pop3-read-point)))
 	(goto-char elmo-pop3-read-point)
-	(if (looking-at "\\+.*$")
-	    (progn
-	      (setq response-continue nil)
-	      (setq elmo-pop3-read-point match-end)
-	      (setq return-value
-		    (if return-value
-			(concat return-value "\n" response-string)
-		      response-string)))
-	  (if (looking-at "\\-.*$")
-	      (progn
-		(when (looking-at "[^ ]+ \\[\\([^]]+\\)\\]")
-		  (setq return-value
-			(intern
-			 (downcase
-			  (buffer-substring (match-beginning 1)
-					    (match-end 1))))))
-		(setq err t
-		      response-continue nil
-		      elmo-pop3-read-point match-end
-		      return-value (cons (or return-value 'err) nil)))
-	    (setq elmo-pop3-read-point match-end)
-	    (if not-command
-		(setq response-continue nil))
-	    (setq return-value
-		  (if return-value
-		      (concat return-value "\n" response-string)
-		    response-string)))
-	  (setq elmo-pop3-read-point match-end)))
-      (if err
-	  return-value
-	(cons 'ok return-value)))))
+	(setq elmo-pop3-read-point match-end)
+	(cond
+	 ((looking-at "\\+")
+	  (setq response-continue nil))
+	 ((looking-at "\\-")
+	  (setq err (or (when (looking-at "[^ ]+ \\[\\([^]]+\\)\\]")
+			  (intern (downcase
+				   (buffer-substring (match-beginning 1)
+						     (match-end 1)))))
+			'err)
+		response-continue nil
+		start nil))
+	 (not-command
+	  (setq response-continue nil))))
+      (cons (or err 'ok)
+	    (when start
+	      (elmo-delete-cr (buffer-substring start (- match-end 2))))))))
 
 (defun elmo-pop3-process-filter (process output)
   (when (buffer-live-p (process-buffer process))
@@ -301,7 +283,7 @@ CODE is one of the following:
     (car response)))
 
 (defun elmo-pop3-auth-apop (session)
-  (unless (string-match "^\+OK .*\\(<[=!-;?-~]+@[=!-;?-~]+>\\)"
+  (unless (string-match "^\\+OK .*\\(<[=!-;?-~]+@[=!-;?-~]+>\\)"
 			(elmo-network-session-greeting-internal session))
     (signal 'elmo-open-error '(elmo-pop3-auth-apop)))
   ;; good, APOP ready server
@@ -469,10 +451,9 @@ until the login delay period has expired"))
 
 (defun elmo-pop3-read-contents (process)
   (with-current-buffer (process-buffer process)
-    (let ((case-fold-search nil)
-	  (point elmo-pop3-read-point))
-      (while (and (goto-char (- point 2))
-		  (not (search-forward "\r\n.\r\n" nil t)))
+    (let ((point elmo-pop3-read-point))
+      (while (progn (goto-char (1- point))
+		    (null (search-forward "\n.\r\n" nil t)))
 	(setq point (max (- (point-max) 2) ; Care of \r\n.\r[EOF] case
 			 elmo-pop3-read-point))
 	(accept-process-output process 1))
@@ -615,8 +596,8 @@ until the login delay period has expired"))
       (with-current-buffer (process-buffer process)
 	(elmo-pop3-send-command process "STAT")
 	(setq response (cdr (elmo-pop3-read-response process)))
-	;; response: "^\+OK 2 7570$"
-	(if (not (string-match "^\+OK[ \t]*\\([0-9]*\\)" response))
+	;; response: "^\\+OK 2 7570$"
+	(if (not (string-match "^\\+OK[ \t]*\\([0-9]*\\)" response))
 	    (error "POP STAT command failed")
 	  (setq total
 		(string-to-number
@@ -740,7 +721,7 @@ until the login delay period has expired"))
       (elmo-with-progress-display (elmo-folder-msgdb-create num)
 	  "Creating msgdb"
 	(while (not (eobp))
-	  (setq beg (save-excursion (forward-line 1) (point)))
+	  (setq beg (save-excursion (forward-line) (point)))
 	  (elmo-pop3-next-result-arrived-p)
 	  (save-excursion
 	    (forward-line -1)
@@ -773,17 +754,18 @@ until the login delay period has expired"))
 
 (defun elmo-pop3-read-body (process outbuf)
   (with-current-buffer (process-buffer process)
-    (let ((start elmo-pop3-read-point)
-	  end)
-      (goto-char start)
-      (while (not (re-search-forward "^\\.\r?\n" nil t))
-	(accept-process-output process 1)
-	(goto-char start))
-      (setq end (point))
-      (with-current-buffer outbuf
-	(erase-buffer)
-	(insert-buffer-substring (process-buffer process) start (- end 3)))
-      t)))
+    (let ((point elmo-pop3-read-point)
+	  (read-point elmo-pop3-read-point))
+      (while (and (goto-char (1- point))
+		  (null (search-forward "\n.\r\n" nil t)))
+	(setq point (max (- (point-max) 2) elmo-pop3-read-point))
+	(accept-process-output process 1))
+      (setq point (point))
+      (set-buffer outbuf)
+      (erase-buffer)
+      (insert-buffer-substring
+       (process-buffer process) read-point (- point 3))))
+  t)
 
 (luna-define-method elmo-folder-open-internal ((folder elmo-pop3-folder))
   (unless (elmo-location-map-alist folder)

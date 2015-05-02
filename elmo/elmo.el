@@ -173,9 +173,8 @@ encode and decode a multibyte string."
 	prefix split class folder original)
     (setq original (elmo-string name))
     (if type
-	(progn
-	  (setq prefix (elmo-string (substring name 0 1)))
-	  (setq name (elmo-string (substring name 1))))
+	(setq prefix (elmo-string name 0 1)
+	      name (elmo-string name 1))
       (setq type (intern (car (setq split (split-string name ":")))))
       (if (>= (length split) 2)
 	  (setq name (substring name (+ 1 (length (car split)))))
@@ -275,9 +274,8 @@ If second optional IN-MSGDB is non-nil, only messages in the msgdb are listed.")
     (if visible-only
 	(elmo-living-messages list killed-list)
       (if (and in-msgdb killed-list)
-	  (elmo-uniq-sorted-list
-	   (sort (nconc (elmo-number-set-to-number-list killed-list) list) #'<)
-	   #'eq)
+	  (elmo-sort-uniq-number-list
+	   (nconc (elmo-number-set-to-number-list killed-list) list))
 	list))))
 
 (luna-define-generic elmo-folder-list-messages-internal (folder &optional
@@ -301,16 +299,13 @@ If optional IN-MSGDB is non-nil, retrieve flag information from msgdb.")
 
 (luna-define-method elmo-folder-list-flagged ((folder elmo-folder) flag
 					      &optional in-msgdb)
-  (let ((msgs (if in-msgdb
-		  t
-		(elmo-folder-list-flagged-internal folder flag))))
-    (unless (listp msgs)
-      (setq msgs (elmo-msgdb-list-flagged (elmo-folder-msgdb folder) flag)))
-    (if in-msgdb
-	msgs
-      (elmo-uniq-list
-       (nconc (elmo-folder-list-global-flag-messages folder flag) msgs)
-       #'delq))))
+  (if in-msgdb
+      (elmo-msgdb-list-flagged (elmo-folder-msgdb folder) flag)
+    (let ((msgs (elmo-folder-list-flagged-internal folder flag)))
+      (unless (listp msgs)
+	(setq msgs (elmo-msgdb-list-flagged (elmo-folder-msgdb folder) flag)))
+      (elmo-folder-merge-flagged
+       folder (elmo-folder-list-global-flag-messages folder flag) msgs))))
 
 (luna-define-generic elmo-folder-list-flagged-internal (folder flag)
   "Return a list of message in the FOLDER with FLAG.
@@ -319,6 +314,14 @@ Return t if the message list is not available.")
 (luna-define-method elmo-folder-list-flagged-internal ((folder elmo-folder)
 						       flag)
   t)
+
+(luna-define-generic elmo-folder-merge-flagged (folder local remote)
+  "Merge messages of flag folder and messages of remote folder.
+LOCAL is the list of messages from flag folder.
+REMOTE is the list of messages from remote folder.")
+
+(luna-define-method elmo-folder-merge-flagged ((folder elmo-folder) local remote)
+  (elmo-sort-uniq-number-list (nconc local remote)))
 
 (luna-define-generic elmo-folder-list-subfolders (folder &optional one-level)
   "Returns a list of subfolders contained in FOLDER.
@@ -371,7 +374,8 @@ Override this method by each implement of `elmo-folder'.")
 FOLDER is the ELMO folder structure.
 CONDITION is a condition structure for searching.
 If optional argument NUMBERS is specified and is a list of message numbers,
-messages are searched from the list.")
+messages are searched from the list.
+If NUMBERS is t, indicates that messages are selected for interactive folder search.")
 
 (luna-define-generic elmo-message-match-condition (folder number
 							  condition
@@ -424,7 +428,7 @@ If optional IS-LOCAL is non-nil, update only local (not server) status.")
 FOLDER is the ELMO folder structure.")
 
 (luna-define-generic elmo-folder-append-buffer (folder &optional flags
-						       number)
+						       number return-number)
   "Append current buffer as a new message.
 FOLDER is the destination folder (ELMO folder structure).
 FLAGS is the flag list for the appended message (list of symbols).
@@ -432,6 +436,9 @@ If FLAGS contain `read', the message is appended as `not-unread'.
 If it is nil, the appended message will be treated as `new'.
 If optional argument NUMBER is specified, the new message number is set
 \(if possible\).
+If optional argument RETURN-NUMBER is non-nil, return the number
+of the appended message if possible. If the number could not be
+obtained return t.
 Return nil on failure.")
 
 (luna-define-generic elmo-folder-pack-numbers (folder)
@@ -794,10 +801,16 @@ Return a cons cell of (NUMBER-CROSSPOSTS . NEW-FLAG-ALIST).")
 (luna-define-method elmo-folder-search ((folder elmo-folder)
 					condition
 					&optional numbers)
-  (let ((numbers (or numbers (elmo-folder-list-messages folder)))
-	(msgdb (elmo-folder-msgdb folder))
+  (let ((msgdb (elmo-folder-msgdb folder))
 	results)
-    (setq results (elmo-msgdb-search msgdb condition numbers))
+    (setq numbers (cond
+		   ((null numbers)
+		    (elmo-folder-list-messages folder))
+		   ((listp numbers)
+		    numbers)
+		   (t
+		    (elmo-folder-list-messages folder 'visible 'in-msgdb)))
+	  results (elmo-msgdb-search msgdb condition numbers))
     (if (listp results)
 	results
       (elmo-condition-optimize condition)
@@ -1010,7 +1023,7 @@ If optional argument IF-EXISTS is nil, load on demand.
 	    (if append-list
 		(length append-list)
 	      (if delete-list
-		  (- 0 (length delete-list))
+		  (- (length delete-list))
 		0)))
 	  (length in-folder))))
 
@@ -1060,8 +1073,7 @@ If optional argument IF-EXISTS is nil, load on demand.
   (eq (elmo-folder-type-internal folder) type))
 
 (luna-define-method elmo-folder-next-message-number ((folder elmo-folder))
-  (+ 1 (elmo-max-of-list (or (elmo-folder-list-messages folder)
-			     '(0)))))
+  (1+ (elmo-max-of-list (elmo-folder-list-messages folder))))
 
 (eval-and-compile
   (luna-define-class elmo-file-tag))
@@ -1623,6 +1635,7 @@ flag status.
 If NO-CHECK is non-nil, rechecking folder is skipped.
 If optional argument MASK is specified and is a list of message numbers,
 synchronize messages only which are contained the list.
+MASK is assumed to be a subset of existing (not deleted) messages.
 Return amount of cross-posted messages.
 If update process is interrupted, return nil.")
 
@@ -1645,23 +1658,27 @@ If update process is interrupted, return nil.")
 	      diff-new diff-del
 	      delete-list new-list new-msgdb crossed)
 	  (message "Checking folder diff...")
-	  (elmo-set-list
-	   '(diff-new diff-del)
-	   (elmo-list-diff (elmo-folder-list-messages folder)
-			   (elmo-folder-list-messages folder nil 'in-msgdb)))
-	  (when diff-new
-	    (setq diff-new (sort diff-new #'<))
+          ;; If MASK is supplied, compare against messagedb to
+          ;; determine what needs to be synchronized.
+          (if (and mask (not ignore-msgdb))
+              (setq diff-new
+                    (car (elmo-list-diff
+                          mask
+                          (elmo-folder-list-messages folder nil 'in-msgdb))))
+            (elmo-set-list
+             '(diff-new diff-del)
+             (elmo-list-diff (elmo-folder-list-messages folder)
+                             (elmo-folder-list-messages folder nil 'in-msgdb))))
+	  (if diff-new
 	    (unless disable-killed
-	      (setq diff-new (elmo-living-messages diff-new killed-list)))
-	    (when (and mask (not ignore-msgdb))
-	      (setq diff-new (elmo-list-filter mask diff-new))))
+	      (setq diff-new (elmo-living-messages diff-new killed-list))))
 	  (message "Checking folder diff...done")
 	  (setq new-list (elmo-folder-confirm-appends folder diff-new))
 	  ;; Append to killed list as (MIN-OF-DISAPPEARED . MAX-OF-DISAPPEARED)
-	  (when (not (eq (length diff-new)
-			 (length new-list)))
+	  (when (/= (length diff-new)
+		    (length new-list))
 	    (let* ((diff (elmo-list-diff diff-new new-list))
-		   (disappeared (sort (car diff) #'<)))
+		   (disappeared (car diff)))
 	      (when disappeared
 		(elmo-folder-kill-messages-range folder
 						 (car disappeared)

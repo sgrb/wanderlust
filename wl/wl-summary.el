@@ -43,14 +43,14 @@
 (require 'wl-highlight)
 (require 'wl-refile)
 (require 'wl-util)
-(condition-case nil (require 'timezone) (error nil))
-(condition-case nil (require 'easymenu) (error nil))
+(require 'timezone nil t)
+(require 'easymenu nil t)
 (require 'elmo-date)
-(condition-case nil (require 'ps-print) (error nil))
+(require 'ps-print nil t)
 
 (eval-when-compile
   (require 'cl)
-  (condition-case () (require 'timer) (error nil))
+  (require 'timer nil t)
   (defalias-maybe 'ps-print-buffer-with-faces 'ignore)
   (defalias-maybe 'elmo-database-msgid-put 'ignore)
   (defalias-maybe 'elmo-database-close 'ignore)
@@ -626,7 +626,7 @@ See also variable `wl-use-petname'."
 	    (when (or (null (get-text-property (point) 'face))
 		      (wl-summary-persistent-mark-invalid-p))
 	      (wl-summary-update-persistent-mark (wl-summary-message-number)))
-	    (forward-line 1)))))
+	    (forward-line)))))
     (set-buffer-modified-p nil)))
 
 (defun wl-summary-window-scroll-functions ()
@@ -1678,7 +1678,7 @@ If ARG is non-nil, checking is omitted."
 			   targets
 			   (wl-thread-get-children-msgs-uncached
 			    msg prefetch-marks))))
-	  (forward-line 1))
+	  (forward-line))
 	(setq length (length targets))
 	(message "Prefetching...")
 	(while targets
@@ -1721,11 +1721,11 @@ If ARG is non-nil, checking is omitted."
 			     (if (wl-thread-entity-get-opened entity)
 				 (list number)
 			       (wl-thread-get-children-msgs number))))
-		(forward-line 1)))
+		(forward-line)))
 	  (while (not (eobp))
 	    (setq number-list
 		  (nconc number-list (list (wl-summary-message-number))))
-	    (forward-line 1)))
+	    (forward-line)))
 	number-list))))
 
 (defun wl-summary-mark-as-read-region (beg end)
@@ -1838,7 +1838,7 @@ If ARG is non-nil, checking is omitted."
 	(setq msgid (elmo-message-field folder number 'message-id))
 	(elmo-message-set-cached folder number
 				 (elmo-file-cache-exists-p msgid))
-	(forward-line 1))
+	(forward-line))
       (wl-summary-count-unread)
       (wl-summary-update-modeline)
       (message "Resuming cache status...done"))))
@@ -1870,7 +1870,7 @@ If ARG is non-nil, checking is omitted."
 		      (delq (car msgs) wl-summary-buffer-number-list)))))
 	(setq msgs (cdr msgs)))
       (when (eq wl-summary-buffer-view 'thread)
-	(let ((updates (elmo-uniq-list update-list)))
+	(let ((updates (elmo-sort-uniq-number-list update-list)))
 	  (elmo-with-progress-display (wl-thread-update-line (length updates))
 	      "Updating deleted thread"
 	    (wl-thread-update-line-msgs updates)
@@ -1888,7 +1888,7 @@ If ARG is non-nil, checking is omitted."
       (when (or (not check)
 		(wl-summary-persistent-mark-invalid-p))
 	(wl-summary-update-persistent-mark))
-      (forward-line 1))))
+      (forward-line))))
 
 (defun wl-summary-update-mark-window (&optional win beg)
   "Update persistent mark in visible summary window.
@@ -1994,7 +1994,7 @@ This function is defined for `window-scroll-functions'"
 					    (not disable-killed)
 					    'in-msgdb)
 					   wl-summary-buffer-number-list))
-		(setq append-list (sort (car diff) #'<))
+		(setq append-list (car diff))
 		(setq delete-list (cadr diff))
 
 		(when delete-list
@@ -2040,7 +2040,7 @@ This function is defined for `window-scroll-functions'"
 		(when (and (eq wl-summary-buffer-view 'thread)
 			   update-top-list)
 		  (wl-thread-update-indent-string-thread
-		   (elmo-uniq-list update-top-list)))
+		   (elmo-sort-uniq-number-list update-top-list)))
 		(when (or delete-list append-list)
 		  (wl-summary-set-message-modified))
 		(when (and sync-all (eq wl-summary-buffer-view 'thread))
@@ -2098,8 +2098,7 @@ This function is defined for `window-scroll-functions'"
 		     (not wl-summary-lazy-highlight)
 		     (not (get-text-property (point) 'face)))
 	    (save-excursion
-	      (forward-line (- 0
-			       (or
+	      (forward-line (- (or
 				wl-summary-partial-highlight-above-lines
 				wl-summary-highlight-partial-threshold)))
 	      (wl-highlight-summary (point) (point-max))))))
@@ -2142,12 +2141,12 @@ This function is defined for `window-scroll-functions'"
 	  (progn
 	    (goto-char beg)
 	    (if (re-search-forward regexp end t)
-		(progn (backward-char 1) (beginning-of-line) t)
+		(progn (backward-char) (beginning-of-line) t)
 	      (goto-char pos)
 	      nil))
 	(beginning-of-line)
 	(if (or (and (re-search-forward regexp end t)
-		     (progn (backward-char 1) t))
+		     (progn (backward-char) t))
 		(re-search-backward regexp beg t))
 	    (progn (beginning-of-line) t)
 	  nil)))))
@@ -2353,7 +2352,7 @@ If ARG, without confirm."
       (setq wl-summary-buffer-number-list
 	    (cons (wl-summary-message-number)
 		  wl-summary-buffer-number-list))
-      (forward-line 1))
+      (forward-line))
     (setq wl-summary-buffer-number-list
 	  (nreverse wl-summary-buffer-number-list))))
 
@@ -2584,11 +2583,11 @@ If ARG, without confirm."
   (interactive)
   (let ((depth (or depth
 		   (wl-thread-get-depth-of-current-line))))
-    (forward-line 1)
+    (forward-line)
     (while (and (not (eobp))
 		(>= (wl-thread-get-depth-of-current-line)
 		    depth))
-      (forward-line 1))
+      (forward-line))
     (beginning-of-line)))
 
 (defun wl-summary-insert-line (line)
@@ -2629,9 +2628,11 @@ If ARG, without confirm."
       nil)))
 
 (defun wl-summary-default-subject-filter (subject)
-  (setq subject (elmo-replace-in-string subject "[ \t]*\\(re\\|was\\)[:>]" ""))
-  (setq subject (elmo-replace-in-string subject "[ \t]" ""))
-  (elmo-replace-in-string subject "^\\[[^]]*\\]" ""))
+  (setq subject (elmo-replace-in-string
+		 subject "\\(\\(re\\|was\\)[:>]\\|[ \t]+\\)+" ""))
+  (if (string-match "^\\[[^]]*\\]" subject)
+      (substring subject (match-end 0))
+    subject))
 
 (defun wl-summary-subject-equal (subject1 subject2)
   (string= (funcall wl-summary-subject-filter-function subject1)
@@ -2789,11 +2790,10 @@ If ARG, without confirm."
 		       (or (elmo-message-entity-field parent-entity
 						      'subject) ""))))
 	    (setq parent-number nil))
-	(setq retval
-	      (wl-thread-insert-message entity
-					number parent-number update linked))
-	(and retval
-	     (wl-append update-list (list retval)))
+	(when (setq retval (wl-thread-insert-message
+			    entity number parent-number update linked))
+	  (wl-append update-list (list retval)))
+	(elmo-progress-notify 'wl-summary-insert-line)
 	(setq entity nil) ; exit loop
 	(while (setq delayed-entity (assq number wl-summary-delayed-update))
 	  (setq wl-summary-delayed-update
@@ -2847,18 +2847,12 @@ If ARG, without confirm."
 (defun wl-summary-pick (&optional from-list delete-marks)
   (interactive "i\nP")
   (save-excursion
-    (let* ((messages (or from-list
-			 (elmo-folder-list-messages
-			  wl-summary-buffer-elmo-folder
-			  'visible
-			  'in-msgdb)
-			 (error "No messages")))
-	   (condition (car (elmo-parse-search-condition
+    (let* ((condition (car (elmo-parse-search-condition
 			    (wl-read-search-condition
 			     wl-summary-pick-field-default))))
 	   (result (elmo-folder-search wl-summary-buffer-elmo-folder
 				       condition
-				       messages))
+				       (or from-list t)))
 	   num)
       (if delete-marks
 	  (let ((mlist wl-summary-buffer-target-mark-list))
@@ -2914,7 +2908,7 @@ If ARG, exit virtual folder."
 	(message "Unmarking..."))
       (while (not (eobp))
 	(wl-summary-unset-mark nil nil force)
-	(forward-line 1))
+	(forward-line))
       (unless no-msg
 	(message "Unmarking...done"))
       (setq wl-summary-buffer-target-mark-list nil)
@@ -4342,7 +4336,7 @@ Use function list is `wl-summary-write-current-folder-functions'."
     (while (and skip
 		(not (if downward (eobp) (bobp))))
       (if downward
-	  (forward-line 1)
+	  (forward-line)
 	(forward-line -1))
       (setq skip (or (string-match skip-tmark-regexp
 				   (wl-summary-temp-mark))
@@ -4780,9 +4774,10 @@ If ARG is numeric number, decode message as following:
     (if num
 	(save-excursion
 	  (setq filename (concat (number-to-string num) wl-summary-save-file-suffix))
-	  (when (or (null arg)
-		    (file-exists-p filename))
-	    (setq filename (expand-file-name (read-file-name "Save to file: " wl-save-dir nil nil filename))))
+	  (if (or (null arg)
+                  (file-exists-p (expand-file-name filename wl-save-dir)))
+              (setq filename (expand-file-name (read-file-name "Save to file: " wl-save-dir nil nil filename)))
+            (setq filename (expand-file-name filename wl-save-dir)))
 	  (wl-summary-set-message-buffer-or-redisplay)
 	  (set-buffer (wl-message-get-original-buffer))
 	  (when (or arg
@@ -4812,10 +4807,10 @@ If ARG is numeric number, decode message as following:
 		      (wl-summary-save t wl-save-dir)
 		    ;; closed
 		    (wl-summary-save t wl-save-dir))
-		  (forward-line 1))))
+		  (forward-line))))
 	  (while (not (eobp))
 	    (wl-summary-save t wl-save-dir)
-	    (forward-line 1)))))))
+	    (forward-line)))))))
 
 ;; mew-summary-pipe-message()
 (defun wl-summary-pipe-message (prefix command)

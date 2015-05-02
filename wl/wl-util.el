@@ -40,7 +40,7 @@
 (eval-when-compile (require 'cl))
 (eval-when-compile (require 'static))
 
-(condition-case nil (require 'pp) (error nil))
+(require 'pp nil t)
 
 (eval-when-compile
   (require 'time-stamp)
@@ -174,7 +174,7 @@ even when invalid character is contained."
      (when (> (current-column) (abs width))
        (when (> (move-to-column (abs width)) (abs width))
 	 (condition-case nil ; ignore error
-	     (backward-char 1)
+	     (backward-char)
 	   (error)))
        (setq string (buffer-substring (point-min) (point))))
      (if (= (current-column) (abs width))
@@ -301,12 +301,7 @@ or between BEG and END."
 	retval)))
 
 (defsubst wl-repeat-string (str times)
-  (let ((loop times)
-	ret-val)
-    (while (> loop 0)
-      (setq ret-val (concat ret-val str))
-      (setq loop (- loop 1)))
-    ret-val))
+  (apply #'concat (make-list times str)))
 
 (defun wl-append-assoc-list (item value alist)
   "make assoc list '((item1 value1-1 value1-2 ...)) (item2 value2-1 ...)))"
@@ -390,7 +385,7 @@ that `read' can handle, whenever this is possible."
 	      (cond
 	       ((looking-at "\\s(\\|#\\s(")
 		(while (looking-at "\\s(\\|#\\s(")
-		  (forward-char 1)))
+		  (forward-char)))
 	       ((and (looking-at "\\(quote[ \t]+\\)\\([^.)]\\)")
 		     (> (match-beginning 1) 1)
 		     (= ?\( (char-after (1- (match-beginning 1))))
@@ -399,7 +394,7 @@ that `read' can handle, whenever this is possible."
 		       (goto-char (match-beginning 2))
 		       (forward-sexp)
 		       ;; Avoid mucking with match-data; does this test work?
-		       (char-equal ?\) (char-after (point)))))
+		       (char-equal ?\) (following-char))))
 		;; -1 gets the paren preceding the quote as well.
 		(delete-region (1- (match-beginning 1)) (match-end 1))
 		(insert "'")
@@ -411,7 +406,7 @@ that `read' can handle, whenever this is possible."
 	       ((condition-case err-var
 		    (prog1 t (down-list 1))
 		  (error nil))
-		(backward-char 1)
+		(backward-char)
 		(skip-chars-backward " \t")
 		(delete-region
 		 (point)
@@ -422,7 +417,7 @@ that `read' can handle, whenever this is possible."
 		    (prog1 t (up-list 1))
 		  (error nil))
 		(while (looking-at "\\s)")
-		  (forward-char 1))
+		  (forward-char))
 		(skip-chars-backward " \t")
 		(delete-region
 		 (point)
@@ -444,8 +439,8 @@ that `read' can handle, whenever this is possible."
 	(put-text-property 0 1 'wl-date time date)
 	time)))
 
-(defun wl-make-date-string ()
-  (let ((s (current-time-string)))
+(defun wl-make-date-string (&optional time)
+  (let ((s (current-time-string time)))
     (string-match "\\`\\([A-Z][a-z][a-z]\\) +[A-Z][a-z][a-z] +[0-9][0-9]? *[0-9][0-9]?:[0-9][0-9]:[0-9][0-9] *[0-9]?[0-9]?[0-9][0-9]"
 		  s)
     (concat (wl-match-string 1 s) ", "
@@ -522,7 +517,9 @@ that `read' can handle, whenever this is possible."
     result))
 
 (defun wl-collect-draft ()
-  (let ((draft-regexp (concat "^" (regexp-quote wl-draft-folder)))
+  (let ((draft-regexp (concat "^" (regexp-quote (if (memq 'modeline wl-use-folder-petname)
+                                                    (wl-folder-get-petname wl-draft-folder)
+                                                  wl-draft-folder))))
 	result)
     (dolist (buffer (buffer-list))
       (when (with-current-buffer buffer
@@ -618,15 +615,22 @@ that `read' can handle, whenever this is possible."
      ;; might otherwise generate the same ID via another algorithm.
      wl-unique-id-suffix)))
 
+(defcustom wl-draft-make-message-id-from-address-delimiter "-"
+  "A string between unique and addr-spec of Message-ID built from e-mail address.  It should be consist of atext (described in RFC 5322)."
+  :type 'string
+  :group 'wl-draft)
+
 (defun wl-draft-make-message-id-from-address (string)
   (when (and (stringp string)
 	     (string-match "\\`\\(.+\\)@\\([^@]+\\)\\'" string))
     (let ((local (match-string 1 string))
 	  (domain (match-string 2 string)))
-      (format "<%s%%%s@%s>"
+      (format "<%s%s%s@%s>"
 	      (wl-unique-id)
+	      wl-draft-make-message-id-from-address-delimiter
 	      (if wl-message-id-hash-function
-		  (concat "%" (funcall wl-message-id-hash-function local))
+		  (concat wl-draft-make-message-id-from-address-delimiter
+			  (funcall wl-message-id-hash-function local))
 		local)
 	      domain))))
 
@@ -826,26 +830,35 @@ This function is imported from Emacs 20.7."
     (wl-biff-check-folders)
     ;; Do redisplay right now, if no input pending.
     (sit-for 0)
-    (let* ((current (current-time))
-	   (timer (get 'wl-biff 'timer))
-	   ;; Compute the time when this timer will run again, next.
-	   (next-time (timer-relative-time
-		       (list (aref timer 1) (aref timer 2) (aref timer 3))
-		       (* 5 (aref timer 4)) 0)))
-      ;; If the activation time is far in the past,
-      ;; skip executions until we reach a time in the future.
-      ;; This avoids a long pause if Emacs has been suspended for hours.
-      (or (> (nth 0 next-time) (nth 0 current))
-	  (and (= (nth 0 next-time) (nth 0 current))
-	       (> (nth 1 next-time) (nth 1 current)))
-	  (and (= (nth 0 next-time) (nth 0 current))
-	       (= (nth 1 next-time) (nth 1 current))
-	       (> (nth 2 next-time) (nth 2 current)))
-	  (progn
-	    (timer-set-time timer (timer-next-integral-multiple-of-time
-				   current wl-biff-check-interval)
-			    wl-biff-check-interval)
-	    (timer-activate timer)))))))
+    (let ((timer (get 'wl-biff 'timer))
+	  (access-functions (eval-when-compile (fboundp 'timer--time))))
+      ;; Only normal timer should be checked for skipping.
+      (unless (if access-functions
+		  (timer--idle-delay timer)
+		(aref timer 7))
+	(let ((current (current-time))
+	      (next-time
+	       ;; Compute the time when this timer will run again, next.
+	       (if access-functions
+		   (timer-relative-time
+		    (timer--time timer) (* 5 (timer--repeat-delay timer)))
+		 (timer-relative-time
+		  (list (aref timer 1) (aref timer 2) (aref timer 3))
+		  (* 5 (aref timer 4))))))
+	  ;; If the activation time is far in the past,
+	  ;; skip executions until we reach a time in the future.
+	  ;; This avoids a long pause if Emacs has been suspended for hours.
+	  (or (> (nth 0 next-time) (nth 0 current))
+	      (and (= (nth 0 next-time) (nth 0 current))
+		   (> (nth 1 next-time) (nth 1 current)))
+	      (and (= (nth 0 next-time) (nth 0 current))
+		   (= (nth 1 next-time) (nth 1 current))
+		   (> (nth 2 next-time) (nth 2 current)))
+	      (progn
+		(timer-set-time timer (timer-next-integral-multiple-of-time
+				       current wl-biff-check-interval)
+				wl-biff-check-interval)
+		(timer-activate timer)))))))))
 
 (defsubst wl-biff-notify (new-mails notify-minibuf)
   (when (and (not wl-modeline-biff-status) (> new-mails 0))
@@ -891,7 +904,8 @@ This function is imported from Emacs 20.7."
 
 (defun wl-biff-check-folder (folder)
   (if (eq (elmo-folder-type-internal folder) 'pop3)
-      (unless (elmo-pop3-get-session folder 'any-exists)
+      (if (elmo-pop3-get-session folder 'any-exists)
+	  (make-list 3 0)
 	(wl-folder-check-one-entity (elmo-folder-name-internal folder)
 				    'biff))
     (wl-folder-check-one-entity (elmo-folder-name-internal folder)

@@ -1,4 +1,4 @@
-\input texinfo @c -*-texinfo -*-
+\input texinfo @c -*-texinfo -*- coding: us-ascii -*-
 @c %**start of header
 @setfilename wl.info
 @settitle Wanderlust -- Yet Another Message Interface On Emacsen --
@@ -1365,6 +1365,8 @@ be assigned by @code{elmo-search-default-engine}.
 @menu
 * namazu::      namazu
 * grep::        grep
+* mu::          mu
+* notmuch::     notmuch
 @end menu
 
 
@@ -1446,7 +1448,7 @@ Using above alias setting, you can specify
 to execute a namazu search with keyword @samp{wanderlust} using indices in the 
 directory @file{~/.elmo/cache} and @file{~/documents}.
 
-@node grep,  , namazu, Search Folder
+@node grep, mu, namazu, Search Folder
 @subsection grep
 @pindex grep
 
@@ -1470,6 +1472,61 @@ Example:
 @end group
 @end example
 
+@node mu, notmuch, grep, Search Folder
+@subsection mu
+@pindex mu
+
+Search mail using mu (@uref{http://www.djcbsoftware.nl/code/mu/}).
+
+Examples (from the mu cheatsheet)
+
+@example
+@group
+[Helsinki]
+    -> messages about Helsinki (in message body, subject, sender, ...)
+
+[to:Jack subject:jellyfish tumbleweed]
+    -> messages to Jack with subject jellyfish containing the word tumbleweed
+
+[size:2k..2m date:20091201..20093112 flag:attach from:bill]
+    -> messages between 2 kilobytes and a 2Mb, written in December 2009 with an attachment from Bill
+
+[subject:soc* flag:unread]
+    -> unread messages about things starting with 'soc' (soccer, society, socrates, ...)
+
+[mime:image/*]
+    -> messages with images as attachment
+
+['foo bar']
+    -> search for messages with the phrase "foo bar"
+
+@end group
+@end example
+
+@node notmuch,  , mu, Search Folder
+@subsection notmuch
+@pindex notmuch
+
+Search mail using notmuch (@uref{http://notmuchmail.org/}).
+
+Examples (from the notmuch manual)
+
+@example
+@group
+[term1]
+    -> messages that contain 'term1'
+
+[-term1]
+    -> messages that DO NOT contain 'term1'
+
+[term1 term2]
+    -> messages containing term1 and term2
+
+['foo bar']
+    -> search for messages with the phrase "foo bar"
+
+@end group
+@end example
 
 @node Multi Folder, Filter Folder, Search Folder, Folders
 @section Multi Folder
@@ -2413,7 +2470,7 @@ folder, create it after confirmation.
 Create a folder group.
 (@code{wl-fldmgr-make-group})
 
-@itemx m A
+@item m A
 @kindex m A (Folder)
 @findex wl-fldmgr-make-access-group
 Create an access group.
@@ -9040,7 +9097,7 @@ in Japanese.}
 I would like to express my thanks to the members of the mailing list for
 valuable advice and many pieces of code they contributed.
 
-@subsection Archive
+@section Archive
 
 You can read messages posted to the mailing list on the web or in
 NetNews.
@@ -9049,14 +9106,14 @@ Read messages posted to @t{<wl@@ml.gentei.org>}
 
 @example
 @uref{http://dir.gmane.org/gmane.mail.wanderlust.general.japanese}
-@uref{news://gmane.mail.wanderlust.general.japanese@@news.gmane.org}
+@uref{news://news.gmane.org/gmane.mail.wanderlust.general.japanese}
 @end example
 
 Read messages posted to @t{<wl-en@@ml.gentei.org>}
 
 @example
 @uref{http://dir.gmane.org/gmane.mail.wanderlust.general}
-@uref{news://gmane.mail.wanderlust.general@@news.gmane.org}
+@uref{news://news.gmane.org/gmane.mail.wanderlust.general}
 @end example
 
 
